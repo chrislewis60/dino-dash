@@ -1,0 +1,29 @@
+:root {
+  --bg: #0a0a0f;
+  --text: #e0e0e0;
+  --primary: #4a8c3f;
+  --primary-hover: #5daa4e;
+  --secondary: #333;
+  --secondary-hover: #444;
+  --panel-bg: rgba(20, 20, 30, 0.95);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

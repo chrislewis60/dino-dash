@@ -2,7 +2,29 @@
 
 ## Project Overview
 
-This is a React + TypeScript + Vite application.
+This is a React + TypeScript + Vite application — a dinosaur-themed platform game called **Dino Dash: Extinction Run**.
+
+## Agentic Workflow — Consult Specialist Agents
+
+When making decisions about **architecture, structure, or best practice**, consult the specialist agents defined in `.github/agents/`:
+
+| Agent | When to consult |
+|---|---|
+| **Critical Thinking** (`critical-thinking.agent.md`) | Before committing to a significant design decision — use to challenge assumptions and surface hidden risks |
+| **Coupling Analyser** (`coupling-analyser.agent.md`) | After adding new modules or cross-cutting changes — use to verify no layer violations, circular dependencies, or tight coupling has been introduced |
+| **Expert React Frontend Engineer** (`expert-react-frontend-engineer.agent.md`) | When implementing React components, hooks, context, or performance-sensitive UI — use for React 19.2 best practice guidance |
+| **Azure Principal Architect** (`azure-principal-architect.agent.md`) | When adding infrastructure, deployment, or cloud service integrations — use for Well-Architected Framework alignment |
+
+### When to invoke agents
+
+- **Before major structural changes**: Run Critical Thinking to validate the approach
+- **After completing a feature or phase**: Run Coupling Analyser to verify architectural integrity
+- **When unsure about React patterns**: Consult Expert React Frontend Engineer for idiomatic solutions
+- **For any cloud/infra decision**: Consult Azure Principal Architect
+
+### How to invoke
+
+Use the agents as sub-agents (via `@agent-name` in chat or by running them as sub-agents in automated workflows). They are reviewers — they challenge, analyse, and advise but do not implement unless explicitly asked.
 
 ## Code Style & Conventions
 

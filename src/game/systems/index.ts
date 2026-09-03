@@ -3,6 +3,8 @@ import type {
   MeteorEntity,
   LavaVentEntity,
   PterodactylEntity,
+  PlatformEntity,
+  SpikePitEntity,
   CollectibleEntity,
   PowerUpEntity,
   LevelConfig,
@@ -10,7 +12,7 @@ import type {
 } from '@/types'
 import { generateId, randomBetween, randomInt } from '@/utils'
 
-const PLATFORM_Y = 420        // ground-level y position
+const PLATFORM_Y = 435        // ground-level y position
 const CANVAS_WIDTH = 800
 const CANVAS_HEIGHT = 500
 
@@ -46,6 +48,8 @@ export class SpawnSystem {
     pterodactyls: PterodactylEntity[],
     collectibles: CollectibleEntity[],
     powerups: PowerUpEntity[],
+    platforms: PlatformEntity[],
+    spikePits: SpikePitEntity[],
   ): void {
     for (const rule of this.levelConfig.spawnRules) {
       const prev = this.timers.get(rule.entityType) ?? rule.intervalMs
@@ -57,17 +61,54 @@ export class SpawnSystem {
         // Spawn
         for (let i = 0; i < rule.quantity; i++) {
           switch (rule.entityType) {
-            case 'meteor':    meteors.push(this.createMeteor()); break
-            case 'lavaVent':  vents.push(this.createLavaVent()); break
+            case 'meteor':      meteors.push(this.createMeteor()); break
+            case 'lavaVent':    vents.push(this.createLavaVent()); break
             case 'pterodactyl': pterodactyls.push(this.createPterodactyl()); break
-            case 'fossil':    collectibles.push(this.createFossil()); break
-            case 'egg':       collectibles.push(this.createEgg()); break
-            case 'powerup':   powerups.push(this.createPowerUp()); break
+            case 'fossil':      collectibles.push(this.createFossil()); break
+            case 'egg':         collectibles.push(this.createEgg()); break
+            case 'powerup':     powerups.push(this.createPowerUp()); break
+            case 'platform':    platforms.push(this.createPlatform()); break
+            case 'spikePit':    spikePits.push(this.createSpikePit()); break
           }
         }
       } else {
         this.timers.set(rule.entityType, next)
       }
+    }
+  }
+
+  private createPlatform(): PlatformEntity {
+    const width = randomBetween(100, 220)
+    const height = 18
+    // Platforms appear at varied heights: low (near ground), mid, or high
+    const heightOptions = [
+      PLATFORM_Y - 110,  // low — one jump up
+      PLATFORM_Y - 190,  // mid — two jumps up
+    ]
+    const y = heightOptions[randomInt(0, heightOptions.length - 1)]
+    return {
+      id: generateId(),
+      type: 'platform',
+      x: SPAWN_X,
+      y,
+      width,
+      height,
+      active: true,
+      crumbling: false,
+      crumbleTimer: 0,
+    }
+  }
+
+  private createSpikePit(): SpikePitEntity {
+    const width = randomBetween(40, 90)
+    return {
+      id: generateId(),
+      type: 'spikePit',
+      x: SPAWN_X,
+      y: PLATFORM_Y - 20,  // sits flush with ground surface
+      width,
+      height: 20,
+      active: true,
     }
   }
 
@@ -180,6 +221,7 @@ export class PhysicsSystem {
     input: InputState,
     deltaMs: number,
     worldSpeed: number,
+    platforms: PlatformEntity[],
   ): void {
     if (player.state === 'dead') return
 
@@ -216,7 +258,27 @@ export class PhysicsSystem {
 
     // ── Gravity ──
     player.velocityY += GRAVITY * dt
+    const prevBottom = player.y + player.height  // bottom before vertical movement
     player.y += player.velocityY * dt
+
+    // ── Elevated platform collision (one-way: land on top only) ──
+    for (const platform of platforms) {
+      if (!platform.active) continue
+      const playerBottom = player.y + player.height
+      const horizontalOverlap =
+        player.x + player.width > platform.x && player.x < platform.x + platform.width
+      if (
+        player.velocityY >= 0 &&
+        horizontalOverlap &&
+        playerBottom >= platform.y &&
+        prevBottom <= platform.y + 4
+      ) {
+        player.y = platform.y - player.height
+        player.velocityY = 0
+        player.jumpsRemaining = 2
+        if (player.state !== 'sliding') player.state = 'running'
+      }
+    }
 
     // ── Ground collision ──
     const groundY = PLATFORM_Y - player.height
@@ -284,6 +346,7 @@ export class CollisionSystem {
     meteors: MeteorEntity[],
     vents: LavaVentEntity[],
     pterodactyls: PterodactylEntity[],
+    spikePits: SpikePitEntity[],
   ): boolean {
     if (player.state === 'dead' || player.shield || player.roarActive) return false
 
@@ -302,6 +365,11 @@ export class CollisionSystem {
       if (!p.active || p.phase !== 'diving') continue
       if (aabbOverlap(player.x, player.y, player.width, player.height,
                        p.x, p.y, p.width, p.height)) return true
+    }
+    for (const s of spikePits) {
+      if (!s.active) continue
+      if (aabbOverlap(player.x, player.y, player.width, player.height,
+                       s.x, s.y, s.width, s.height)) return true
     }
     return false
   }

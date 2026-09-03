@@ -3,6 +3,8 @@ import type {
   MeteorEntity,
   LavaVentEntity,
   PterodactylEntity,
+  PlatformEntity,
+  SpikePitEntity,
   CollectibleEntity,
   PowerUpEntity,
   LevelConfig,
@@ -18,6 +20,8 @@ export interface RenderPayload {
   pterodactyls: PterodactylEntity[]
   collectibles: CollectibleEntity[]
   powerups: PowerUpEntity[]
+  platforms: PlatformEntity[]
+  spikePits: SpikePitEntity[]
   levelConfig: LevelConfig
   worldOffset: number
   stats: GameStats
@@ -39,6 +43,7 @@ const POWERUP_LABELS: Record<string, string> = {
 
 export class CanvasRenderer {
   private ctx: CanvasRenderingContext2D
+  private readonly backgroundImages = new Map<string, HTMLImageElement>()
 
   constructor(_canvas: HTMLCanvasElement) {
     const ctx = _canvas.getContext('2d')
@@ -52,7 +57,8 @@ export class CanvasRenderer {
 
     this.drawBackground(payload.levelConfig, payload.worldOffset)
     this.drawGround(payload.levelConfig)
-    this.drawPlatforms()
+    this.drawPlatforms(payload.platforms, payload.levelConfig)
+    this.drawSpikePits(payload.spikePits)
     this.drawMeteorWarnings(payload.meteors)
     this.drawVents(payload.vents)
     this.drawMeteors(payload.meteors)
@@ -66,6 +72,14 @@ export class CanvasRenderer {
 
   private drawBackground(config: LevelConfig, worldOffset: number): void {
     const { ctx } = this
+
+    if (config.backgroundImage) {
+      const backgroundImage = this.getBackgroundImage(config.backgroundImage)
+      if (backgroundImage.complete && backgroundImage.naturalWidth > 0) {
+        this.drawCoverImage(backgroundImage, worldOffset, config.backgroundScrollFactor ?? 0)
+        return
+      }
+    }
 
     // Sky fill
     ctx.fillStyle = config.skyColor
@@ -82,6 +96,32 @@ export class CanvasRenderer {
         ctx.restore()
       }
     }
+  }
+
+  private getBackgroundImage(source: string): HTMLImageElement {
+    const cachedImage = this.backgroundImages.get(source)
+    if (cachedImage) return cachedImage
+
+    const image = new Image()
+    image.src = source
+    this.backgroundImages.set(source, image)
+    return image
+  }
+
+  private drawCoverImage(
+    image: HTMLImageElement,
+    worldOffset: number,
+    scrollFactor: number,
+  ): void {
+    const { ctx } = this
+    const scale = Math.max(CANVAS_WIDTH / image.naturalWidth, CANVAS_HEIGHT / image.naturalHeight)
+    const width = image.naturalWidth * scale
+    const height = image.naturalHeight * scale
+    const availableHorizontalPan = Math.max(0, width - CANVAS_WIDTH)
+    const x = -((worldOffset * scrollFactor) % (availableHorizontalPan || 1))
+    const y = (CANVAS_HEIGHT - height) / 2
+
+    ctx.drawImage(image, x, y, width, height)
   }
 
   private drawLayerShapes(layer: BackgroundLayerConfig, ctx: CanvasRenderingContext2D): void {
@@ -111,6 +151,8 @@ export class CanvasRenderer {
   // ─── Ground ────────────────────────────────────────────────────────────────
 
   private drawGround(config: LevelConfig): void {
+    if (config.showGround === false) return
+
     const { ctx } = this
     ctx.fillStyle = config.groundColor
     ctx.fillRect(0, PLATFORM_Y, CANVAS_WIDTH, GROUND_HEIGHT)
@@ -119,8 +161,39 @@ export class CanvasRenderer {
     ctx.fillRect(0, PLATFORM_Y, CANVAS_WIDTH, 6)
   }
 
-  private drawPlatforms(): void {
-    // Placeholder: platforms can be added as level entities in future iterations
+  private drawPlatforms(platforms: PlatformEntity[], config: LevelConfig): void {
+    const { ctx } = this
+    for (const p of platforms) {
+      if (!p.active) continue
+      // Platform body
+      ctx.fillStyle = config.platformColor
+      ctx.fillRect(p.x, p.y, p.width, p.height)
+      // Top surface highlight
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.25)'
+      ctx.fillRect(p.x, p.y, p.width, 3)
+      // Bottom shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'
+      ctx.fillRect(p.x, p.y + p.height - 3, p.width, 3)
+    }
+  }
+
+  private drawSpikePits(spikePits: SpikePitEntity[]): void {
+    const { ctx } = this
+    for (const s of spikePits) {
+      if (!s.active) continue
+      const spikeCount = Math.max(2, Math.floor(s.width / 16))
+      const spikeWidth = s.width / spikeCount
+      ctx.fillStyle = '#555566'
+      for (let i = 0; i < spikeCount; i++) {
+        const sx = s.x + i * spikeWidth
+        ctx.beginPath()
+        ctx.moveTo(sx, s.y + s.height)          // bottom-left
+        ctx.lineTo(sx + spikeWidth / 2, s.y)     // tip
+        ctx.lineTo(sx + spikeWidth, s.y + s.height) // bottom-right
+        ctx.closePath()
+        ctx.fill()
+      }
+    }
   }
 
   // ─── Hazards ───────────────────────────────────────────────────────────────

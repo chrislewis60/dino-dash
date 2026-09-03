@@ -24,13 +24,14 @@ export type EntityType =
   | 'lavaVent'
   | 'pterodactyl'
   | 'platform'
+  | 'spikePit'
   | 'fossil'
   | 'egg'
   | 'powerup'
 
 export type PlayerState = 'running' | 'jumping' | 'doubleJumping' | 'sliding' | 'dead'
 
-export type HazardType = 'meteor' | 'lavaVent' | 'pterodactyl'
+export type HazardType = 'meteor' | 'lavaVent' | 'pterodactyl' | 'spikePit'
 
 export type PowerUpType = 'shield' | 'sprint' | 'magnet' | 'roar'
 
@@ -90,6 +91,10 @@ export interface PlatformEntity extends Entity {
   crumbleTimer: number
 }
 
+export interface SpikePitEntity extends Entity {
+  type: 'spikePit'
+}
+
 export interface CollectibleEntity extends Entity {
   type: 'fossil' | 'egg'
   collected: boolean
@@ -105,7 +110,7 @@ export interface PowerUpEntity extends Entity {
 // ─── Level Config ─────────────────────────────────────────────────────────────
 
 export interface SpawnRule {
-  entityType: HazardType | 'fossil' | 'egg' | 'powerup'
+  entityType: HazardType | 'fossil' | 'egg' | 'powerup' | 'platform'
   intervalMs: number
   intervalVariance: number  // ± ms randomisation
   quantity: number
@@ -114,6 +119,9 @@ export interface SpawnRule {
 export interface LevelConfig {
   id: number
   name: string
+  backgroundImage?: string
+  backgroundScrollFactor?: number
+  showGround?: boolean
   backgroundLayers: BackgroundLayerConfig[]
   groundColor: string
   skyColor: string

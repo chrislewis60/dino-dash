@@ -1,8 +1,12 @@
 import type { LevelConfig } from '@/types'
+import { BACKGROUND_IMAGES } from '@/config/assets'
 
 export const level1: LevelConfig = {
   id: 1,
   name: 'Jurassic Jungle',
+  backgroundImage: BACKGROUND_IMAGES.JURASSIC_JUNGLE,
+  backgroundScrollFactor: 0.108,
+  showGround: false,
   skyColor: '#4a7c59',
   groundColor: '#5a3e1b',
   platformColor: '#7a5c2e',
@@ -46,6 +50,8 @@ export const level1: LevelConfig = {
     { entityType: 'fossil',       intervalMs: 2500, intervalVariance: 800,  quantity: 2 },
     { entityType: 'egg',          intervalMs: 12000, intervalVariance: 3000, quantity: 1 },
     { entityType: 'powerup',      intervalMs: 18000, intervalVariance: 5000, quantity: 1 },
+    { entityType: 'platform',     intervalMs: 5000,  intervalVariance: 2000, quantity: 1 },
+    { entityType: 'spikePit',     intervalMs: 7000,  intervalVariance: 2500, quantity: 1 },
   ],
   baseSpeedPx: 260,
   maxSpeedPx: 480,
@@ -90,6 +96,8 @@ export const level2: LevelConfig = {
     { entityType: 'fossil',       intervalMs: 2000, intervalVariance: 600,  quantity: 2 },
     { entityType: 'egg',          intervalMs: 10000, intervalVariance: 2500, quantity: 1 },
     { entityType: 'powerup',      intervalMs: 15000, intervalVariance: 4000, quantity: 1 },
+    { entityType: 'platform',     intervalMs: 4000,  intervalVariance: 1500, quantity: 1 },
+    { entityType: 'spikePit',     intervalMs: 5500,  intervalVariance: 2000, quantity: 1 },
   ],
   baseSpeedPx: 320,
   maxSpeedPx: 560,
@@ -136,6 +144,8 @@ export const level3: LevelConfig = {
     { entityType: 'fossil',       intervalMs: 1500, intervalVariance: 500,  quantity: 2 },
     { entityType: 'egg',          intervalMs: 8000, intervalVariance: 2000, quantity: 1 },
     { entityType: 'powerup',      intervalMs: 12000, intervalVariance: 3000, quantity: 1 },
+    { entityType: 'platform',     intervalMs: 3000,  intervalVariance: 1000, quantity: 1 },
+    { entityType: 'spikePit',     intervalMs: 4000,  intervalVariance: 1500, quantity: 1 },
   ],
   baseSpeedPx: 400,
   maxSpeedPx: 700,

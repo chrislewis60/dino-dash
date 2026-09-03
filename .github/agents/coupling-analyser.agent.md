@@ -1,6 +1,4 @@
----
-description: "Use when you want to analyse the codebase for tight coupling, circular dependencies, or poor separation of concerns. Use when a module is hard to test in isolation, when a refactor is blocked by too many interdependencies, or when you want to reduce the blast radius of future changes. Produces a prioritised list of coupling hotspots and actionable refactoring recommendations."
-name: "Coupling Analyser"
+---name: "Coupling Analyser"
 tools: ['codebase', 'search', 'usages', 'problems', 'read', 'findTestFiles', 'githubRepo']
 ---
 

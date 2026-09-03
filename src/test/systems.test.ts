@@ -14,7 +14,7 @@ describe('PhysicsSystem', () => {
     const player = createPlayer()
     player.y = 200  // above ground
     player.velocityY = 0
-    physics.updatePlayer(player, makeIdleInput(), 16, 300)
+    physics.updatePlayer(player, makeIdleInput(), 16, 300, [])
     expect(player.velocityY).toBeGreaterThan(0)
   })
 
@@ -22,7 +22,7 @@ describe('PhysicsSystem', () => {
     const player = createPlayer()
     player.y = PLATFORM_Y  // below ground
     player.velocityY = 100
-    physics.updatePlayer(player, makeIdleInput(), 16, 300)
+    physics.updatePlayer(player, makeIdleInput(), 16, 300, [])
     expect(player.velocityY).toBe(0)
     expect(player.y).toBe(PLATFORM_Y - player.height)
   })
@@ -32,7 +32,7 @@ describe('PhysicsSystem', () => {
     player.y = PLATFORM_Y - player.height
     player.jumpsRemaining = 2
     const input = { ...makeIdleInput(), jumpPressed: true, jump: true }
-    physics.updatePlayer(player, input, 16, 300)
+    physics.updatePlayer(player, input, 16, 300, [])
     expect(player.velocityY).toBeLessThan(0) // going up
     expect(player.jumpsRemaining).toBe(1)
   })
@@ -41,7 +41,7 @@ describe('PhysicsSystem', () => {
     const player = createPlayer()
     player.state = 'running'
     const input = { ...makeIdleInput(), slidePressed: true, slide: true }
-    physics.updatePlayer(player, input, 16, 300)
+    physics.updatePlayer(player, input, 16, 300, [])
     expect(player.state).toBe('sliding')
     expect(player.height).toBe(30) // SLIDE_HEIGHT
   })
@@ -50,7 +50,7 @@ describe('PhysicsSystem', () => {
     const player = createPlayer()
     player.state = 'dead'
     const prevY = player.y
-    physics.updatePlayer(player, makeIdleInput(), 16, 300)
+    physics.updatePlayer(player, makeIdleInput(), 16, 300, [])
     expect(player.y).toBe(prevY)
   })
 })
@@ -68,7 +68,7 @@ describe('CollisionSystem', () => {
       velocityX: 0, velocityY: 0,
       warningX: player.x,
     }
-    const hit = collision.checkHazards(player, [meteor], [], [])
+    const hit = collision.checkHazards(player, [meteor], [], [], [])
     expect(hit).toBe(true)
   })
 
@@ -82,7 +82,7 @@ describe('CollisionSystem', () => {
       velocityX: 0, velocityY: 0,
       warningX: player.x,
     }
-    const hit = collision.checkHazards(player, [meteor], [], [])
+    const hit = collision.checkHazards(player, [meteor], [], [], [])
     expect(hit).toBe(false)
   })
 
@@ -97,7 +97,7 @@ describe('CollisionSystem', () => {
       velocityX: 0, velocityY: 0,
       warningX: player.x,
     }
-    const hit = collision.checkHazards(player, [meteor], [], [])
+    const hit = collision.checkHazards(player, [meteor], [], [], [])
     expect(hit).toBe(false)
   })
 

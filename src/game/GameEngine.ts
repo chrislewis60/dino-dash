@@ -2,6 +2,8 @@ import type {
   MeteorEntity,
   LavaVentEntity,
   PterodactylEntity,
+  PlatformEntity,
+  SpikePitEntity,
   CollectibleEntity,
   PowerUpEntity,
   GameStats,
@@ -41,6 +43,8 @@ export class GameEngine {
   private pterodactyls: PterodactylEntity[] = []
   private collectibles: CollectibleEntity[] = []
   private powerups: PowerUpEntity[] = []
+  private platforms: PlatformEntity[] = []
+  private spikePits: SpikePitEntity[] = []
 
   private physics = new PhysicsSystem()
   private collision = new CollisionSystem()
@@ -182,6 +186,8 @@ export class GameEngine {
       pterodactyls: this.pterodactyls,
       collectibles: this.collectibles,
       powerups: this.powerups,
+      platforms: this.platforms,
+      spikePits: this.spikePits,
       levelConfig: LEVELS[this.levelIndex],
       worldOffset: this.worldOffset,
       stats: this.stats,
@@ -229,10 +235,10 @@ export class GameEngine {
     this.stats.score += scrollDelta * DISTANCE_SCORE_FACTOR * levelConfig.scoreMultiplier
 
     // Spawn entities
-    this.spawn.tick(deltaMs, this.meteors, this.vents, this.pterodactyls, this.collectibles, this.powerups)
+    this.spawn.tick(deltaMs, this.meteors, this.vents, this.pterodactyls, this.collectibles, this.powerups, this.platforms, this.spikePits)
 
     // Physics
-    this.physics.updatePlayer(this._player, inputState, deltaMs, this.worldSpeed)
+    this.physics.updatePlayer(this._player, inputState, deltaMs, this.worldSpeed, this.platforms)
     this.physics.updateMagnetCollectibles(this._player, this.collectibles, deltaMs)
 
     // Move hazards
@@ -245,7 +251,7 @@ export class GameEngine {
     if (this.invincibilityTimer > 0) {
       this.invincibilityTimer -= deltaMs
     } else {
-      const hit = this.collision.checkHazards(this._player, this.meteors, this.vents, this.pterodactyls)
+      const hit = this.collision.checkHazards(this._player, this.meteors, this.vents, this.pterodactyls, this.spikePits)
       if (hit) this.handleDamage()
     }
 
@@ -387,6 +393,18 @@ export class GameEngine {
       if (!p.active || p.collected) continue
       p.x -= scroll
     }
+
+    // Platforms scroll
+    for (const platform of this.platforms) {
+      if (!platform.active) continue
+      platform.x -= scroll
+    }
+
+    // Spike pits scroll
+    for (const s of this.spikePits) {
+      if (!s.active) continue
+      s.x -= scroll
+    }
   }
 
   private prune(): void {
@@ -396,6 +414,8 @@ export class GameEngine {
     this.pterodactyls = this.pterodactyls.filter(e => e.active)
     this.collectibles = this.collectibles.filter(e => e.active && !e.collected && e.x > offscreen)
     this.powerups     = this.powerups.filter(e => e.active && !e.collected && e.x > offscreen)
+    this.platforms    = this.platforms.filter(e => e.active && e.x > offscreen)
+    this.spikePits    = this.spikePits.filter(e => e.active && e.x > offscreen)
   }
 
   private resetLevel(): void {
@@ -405,6 +425,8 @@ export class GameEngine {
     this.pterodactyls = []
     this.collectibles = []
     this.powerups = []
+    this.platforms = []
+    this.spikePits = []
     this.levelTimer = 0
     this.invincibilityTimer = 0
     const config = LEVELS[this.levelIndex]

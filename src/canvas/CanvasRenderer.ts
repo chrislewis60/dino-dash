@@ -11,6 +11,7 @@ import type {
   GameStats,
   BackgroundLayerConfig,
 } from '@/types'
+import { CHARACTER_SPRITES } from '@/config/assets'
 import { PLATFORM_Y, CANVAS_WIDTH, CANVAS_HEIGHT } from '@/game/systems/index'
 
 export interface RenderPayload {
@@ -25,6 +26,7 @@ export interface RenderPayload {
   levelConfig: LevelConfig
   worldOffset: number
   stats: GameStats
+  damageActive: boolean
 }
 
 const GROUND_HEIGHT = 80
@@ -44,6 +46,7 @@ const POWERUP_LABELS: Record<string, string> = {
 export class CanvasRenderer {
   private ctx: CanvasRenderingContext2D
   private readonly backgroundImages = new Map<string, HTMLImageElement>()
+  private readonly spriteImages = new Map<string, HTMLImageElement>()
 
   constructor(_canvas: HTMLCanvasElement) {
     const ctx = _canvas.getContext('2d')
@@ -65,7 +68,7 @@ export class CanvasRenderer {
     this.drawPterodactyls(payload.pterodactyls)
     this.drawCollectibles(payload.collectibles)
     this.drawPowerUps(payload.powerups)
-    this.drawPlayer(payload.player, payload.stats)
+    this.drawPlayer(payload.player, payload.damageActive)
   }
 
   // ─── Background ────────────────────────────────────────────────────────────
@@ -105,6 +108,16 @@ export class CanvasRenderer {
     const image = new Image()
     image.src = source
     this.backgroundImages.set(source, image)
+    return image
+  }
+
+  private getSpriteImage(source: string): HTMLImageElement {
+    const cachedImage = this.spriteImages.get(source)
+    if (cachedImage) return cachedImage
+
+    const image = new Image()
+    image.src = source
+    this.spriteImages.set(source, image)
     return image
   }
 
@@ -345,7 +358,7 @@ export class CanvasRenderer {
 
   // ─── Player ────────────────────────────────────────────────────────────────
 
-  private drawPlayer(player: PlayerEntity, stats: GameStats): void {
+  private drawPlayer(player: PlayerEntity, damageActive: boolean): void {
     const { ctx } = this
     if (player.state === 'dead') return
 
@@ -358,44 +371,20 @@ export class CanvasRenderer {
       ctx.shadowBlur = 20
     }
 
-    const bodyColor = '#4a8c3f'   // dino green
-    const accentColor = '#2d5c28'
+    const sprite = this.getSpriteFrame(player, damageActive)
+    const image = this.getSpriteImage(CHARACTER_SPRITES.DINO)
+    if (image.complete && image.naturalWidth > 0) {
+      const frameSize = image.naturalWidth / 4
+      const frame = Math.floor(Date.now() / sprite.frameDurationMs) % sprite.frameCount
+      const sourceX = (sprite.column + frame) * frameSize
+      const sourceY = sprite.row * frameSize
+      const drawHeight = player.state === 'sliding' ? player.height + 12 : player.height + 32
+      const drawWidth = drawHeight
+      const drawY = player.y + player.height - drawHeight
 
-    if (player.state === 'sliding') {
-      // Crouched body
-      ctx.fillStyle = bodyColor
-      ctx.beginPath()
-      ctx.ellipse(player.x + player.width / 2, player.y + player.height / 2,
-                  player.width / 2, player.height / 2, 0, 0, Math.PI * 2)
-      ctx.fill()
-    } else {
-      // Body
-      ctx.fillStyle = bodyColor
-      ctx.beginPath()
-      ctx.roundRect(player.x, player.y, player.width, player.height, 8)
-      ctx.fill()
-      // Head
-      ctx.fillStyle = accentColor
-      ctx.beginPath()
-      ctx.roundRect(player.x + player.width - 10, player.y - 20, 24, 20, 4)
-      ctx.fill()
-      // Eye
-      ctx.fillStyle = '#ffffff'
-      ctx.beginPath()
-      ctx.arc(player.x + player.width + 8, player.y - 12, 4, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.fillStyle = '#000000'
-      ctx.beginPath()
-      ctx.arc(player.x + player.width + 9, player.y - 12, 2, 0, Math.PI * 2)
-      ctx.fill()
-      // Tiny arms
-      ctx.fillStyle = accentColor
-      ctx.fillRect(player.x + player.width - 5, player.y + 10, 10, 8)
-      // Legs
-      const legOffset = player.state === 'jumping' || player.state === 'doubleJumping' ? 4 : 0
-      ctx.fillStyle = accentColor
-      ctx.fillRect(player.x + 6,  player.y + player.height - 8 + legOffset, 12, 12)
-      ctx.fillRect(player.x + 22, player.y + player.height - 8 - legOffset, 12, 12)
+      ctx.imageSmoothingEnabled = true
+      ctx.drawImage(image, sourceX, sourceY, frameSize, frameSize,
+        player.x + player.width / 2 - drawWidth / 2, drawY, drawWidth, drawHeight)
     }
 
     // Sprint trail effect
@@ -408,6 +397,20 @@ export class CanvasRenderer {
     }
 
     ctx.restore()
-    void stats
+  }
+
+  private getSpriteFrame(
+    player: PlayerEntity,
+    damageActive: boolean,
+  ): { row: number; column: number; frameCount: number; frameDurationMs: number } {
+    if (damageActive) return { row: 3, column: 0, frameCount: 2, frameDurationMs: 180 }
+    if (player.shield || player.sprintActive || player.magnetActive || player.roarActive) {
+      return { row: 3, column: 2, frameCount: 2, frameDurationMs: 180 }
+    }
+    if (player.state === 'sliding') return { row: 1, column: 0, frameCount: 4, frameDurationMs: 140 }
+    if (player.state === 'jumping' || player.state === 'doubleJumping') {
+      return { row: 2, column: 1, frameCount: 1, frameDurationMs: 160 }
+    }
+    return { row: 0, column: 0, frameCount: 4, frameDurationMs: 120 }
   }
 }

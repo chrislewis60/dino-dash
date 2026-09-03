@@ -191,6 +191,7 @@ export class GameEngine {
       levelConfig: LEVELS[this.levelIndex],
       worldOffset: this.worldOffset,
       stats: this.stats,
+      damageActive: this.invincibilityTimer > 0,
     })
 
     this.rafId = requestAnimationFrame(this.loop)

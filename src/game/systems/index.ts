@@ -214,6 +214,8 @@ const SPRINT_DURATION_MS = 5000
 const MAGNET_DURATION_MS = 8000
 const ROAR_DURATION_MS = 2000
 const MAGNET_RADIUS = 150
+const PLAYER_HORIZONTAL_SPEED = 220
+const PLAYER_HORIZONTAL_BOUNDARY = 32
 
 export class PhysicsSystem {
   updatePlayer(
@@ -289,8 +291,12 @@ export class PhysicsSystem {
       if (player.state !== 'sliding') player.state = 'running'
     }
 
-    // ── Forward motion (player stays at fixed X, world scrolls) ──
-    // Player X is kept constant; world offset is managed by GameEngine
+    // ── Horizontal player motion ──
+    const horizontalDirection = Number(input.moveRight) - Number(input.moveLeft)
+    player.velocityX = horizontalDirection * PLAYER_HORIZONTAL_SPEED
+    const minX = PLAYER_HORIZONTAL_BOUNDARY
+    const maxX = CANVAS_WIDTH - player.width - PLAYER_HORIZONTAL_BOUNDARY
+    player.x = Math.min(maxX, Math.max(minX, player.x + player.velocityX * dt))
     void worldSpeed
   }
 

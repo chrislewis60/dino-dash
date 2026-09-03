@@ -46,6 +46,25 @@ describe('PhysicsSystem', () => {
     expect(player.height).toBe(30) // SLIDE_HEIGHT
   })
 
+  it('moves the player horizontally within the screen bounds', () => {
+    const player = createPlayer()
+    const input = { ...makeIdleInput(), moveRight: true }
+
+    physics.updatePlayer(player, input, 1000, 300, [])
+
+    expect(player.x).toBeGreaterThan(120)
+  })
+
+  it('keeps the player within the screen bounds', () => {
+    const player = createPlayer()
+    player.x = 790
+    const input = { ...makeIdleInput(), moveRight: true }
+
+    physics.updatePlayer(player, input, 1000, 300, [])
+
+    expect(player.x + player.width).toBeLessThan(800)
+  })
+
   it('does not apply physics when dead', () => {
     const player = createPlayer()
     player.state = 'dead'

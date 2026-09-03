@@ -5,6 +5,8 @@ const DEFAULT_STATE: InputState = {
   jumpPressed: false,
   slide: false,
   slidePressed: false,
+  moveLeft: false,
+  moveRight: false,
   pause: false,
   pausePressed: false,
 }
@@ -20,6 +22,8 @@ export class InputSystem {
 
   private readonly JUMP_KEYS = ['ArrowUp', 'Space', 'KeyW', ' ']
   private readonly SLIDE_KEYS = ['ArrowDown', 'KeyS']
+  private readonly MOVE_LEFT_KEYS = ['ArrowLeft', 'KeyA']
+  private readonly MOVE_RIGHT_KEYS = ['ArrowRight', 'KeyD']
   private readonly PAUSE_KEYS = ['Escape', 'KeyP']
 
   constructor() {
@@ -31,8 +35,13 @@ export class InputSystem {
     this.keys.add(e.code)
     this.keys.add(e.key)
     // Prevent default for game keys to stop page scrolling
-    if ([...this.JUMP_KEYS, ...this.SLIDE_KEYS].includes(e.code) ||
-        [...this.JUMP_KEYS, ...this.SLIDE_KEYS].includes(e.key)) {
+    const gameKeys = [
+      ...this.JUMP_KEYS,
+      ...this.SLIDE_KEYS,
+      ...this.MOVE_LEFT_KEYS,
+      ...this.MOVE_RIGHT_KEYS,
+    ]
+    if (gameKeys.includes(e.code) || gameKeys.includes(e.key)) {
       e.preventDefault()
     }
   }
@@ -64,12 +73,16 @@ export class InputSystem {
   getState(): InputState {
     const jump = this.isDown(this.JUMP_KEYS)
     const slide = this.isDown(this.SLIDE_KEYS)
+    const moveLeft = this.isDown(this.MOVE_LEFT_KEYS)
+    const moveRight = this.isDown(this.MOVE_RIGHT_KEYS)
     const pause = this.isDown(this.PAUSE_KEYS)
     return {
       jump,
       jumpPressed: jump && !this.wasDown(this.JUMP_KEYS),
       slide,
       slidePressed: slide && !this.wasDown(this.SLIDE_KEYS),
+      moveLeft,
+      moveRight,
       pause,
       pausePressed: pause && !this.wasDown(this.PAUSE_KEYS),
     }

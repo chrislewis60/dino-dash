@@ -168,6 +168,8 @@ export interface InputState {
   jumpPressed: boolean   // true only on the frame the key was pressed
   slide: boolean
   slidePressed: boolean
+  moveLeft: boolean
+  moveRight: boolean
   pause: boolean
   pausePressed: boolean
 }

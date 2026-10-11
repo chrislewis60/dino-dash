@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Focused Vitest validation",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"test",
+				"--",
+				"--run"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}

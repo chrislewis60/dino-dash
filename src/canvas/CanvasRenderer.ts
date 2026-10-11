@@ -11,7 +11,6 @@ import type {
   GameStats,
   BackgroundLayerConfig,
 } from '@/types'
-import { CHARACTER_SPRITES } from '@/config/assets'
 import { PLATFORM_Y, CANVAS_WIDTH, CANVAS_HEIGHT } from '@/game/systems/index'
 
 export interface RenderPayload {
@@ -46,7 +45,6 @@ const POWERUP_LABELS: Record<string, string> = {
 export class CanvasRenderer {
   private ctx: CanvasRenderingContext2D
   private readonly backgroundImages = new Map<string, HTMLImageElement>()
-  private readonly spriteImages = new Map<string, HTMLImageElement>()
 
   constructor(_canvas: HTMLCanvasElement) {
     const ctx = _canvas.getContext('2d')
@@ -108,16 +106,6 @@ export class CanvasRenderer {
     const image = new Image()
     image.src = source
     this.backgroundImages.set(source, image)
-    return image
-  }
-
-  private getSpriteImage(source: string): HTMLImageElement {
-    const cachedImage = this.spriteImages.get(source)
-    if (cachedImage) return cachedImage
-
-    const image = new Image()
-    image.src = source
-    this.spriteImages.set(source, image)
     return image
   }
 
@@ -371,21 +359,15 @@ export class CanvasRenderer {
       ctx.shadowBlur = 20
     }
 
-    const sprite = this.getSpriteFrame(player, damageActive)
-    const image = this.getSpriteImage(CHARACTER_SPRITES.DINO)
-    if (image.complete && image.naturalWidth > 0) {
-      const frameSize = image.naturalWidth / 4
-      const frame = Math.floor(Date.now() / sprite.frameDurationMs) % sprite.frameCount
-      const sourceX = (sprite.column + frame) * frameSize
-      const sourceY = sprite.row * frameSize
-      const drawHeight = player.state === 'sliding' ? player.height + 12 : player.height + 32
-      const drawWidth = drawHeight
-      const drawY = player.y + player.height - drawHeight
+    const drawHeight = player.state === 'sliding' ? player.height + 12 : player.height + 32
+    const drawWidth = drawHeight
+    const drawY = player.y + player.height - drawHeight
+    const drawX = player.x + player.width / 2 - drawWidth / 2
+    const runningFrame = player.state === 'running' ? Math.floor(Date.now() / 120) % 2 : 0
 
-      ctx.imageSmoothingEnabled = true
-      ctx.drawImage(image, sourceX, sourceY, frameSize, frameSize,
-        player.x + player.width / 2 - drawWidth / 2, drawY, drawWidth, drawHeight)
-    }
+    ctx.translate(drawX, drawY)
+    ctx.scale(drawWidth / 100, drawHeight / 100)
+    this.drawDinosaur(runningFrame, damageActive)
 
     // Sprint trail effect
     if (player.sprintActive) {
@@ -399,18 +381,58 @@ export class CanvasRenderer {
     ctx.restore()
   }
 
-  private getSpriteFrame(
-    player: PlayerEntity,
-    damageActive: boolean,
-  ): { row: number; column: number; frameCount: number; frameDurationMs: number } {
-    if (damageActive) return { row: 3, column: 0, frameCount: 2, frameDurationMs: 180 }
-    if (player.shield || player.sprintActive || player.magnetActive || player.roarActive) {
-      return { row: 3, column: 2, frameCount: 2, frameDurationMs: 180 }
-    }
-    if (player.state === 'sliding') return { row: 1, column: 0, frameCount: 4, frameDurationMs: 140 }
-    if (player.state === 'jumping' || player.state === 'doubleJumping') {
-      return { row: 2, column: 1, frameCount: 1, frameDurationMs: 160 }
-    }
-    return { row: 0, column: 0, frameCount: 4, frameDurationMs: 120 }
+  private drawDinosaur(runningFrame: number, damageActive: boolean): void {
+    const { ctx } = this
+    const bodyColor = damageActive ? '#f07854' : '#63bd4c'
+    const shadowColor = damageActive ? '#a83e32' : '#347d38'
+    const legOffset = runningFrame === 0 ? 0 : 7
+
+    ctx.fillStyle = shadowColor
+    ctx.beginPath()
+    ctx.moveTo(32, 57)
+    ctx.lineTo(7, 45)
+    ctx.lineTo(28, 69)
+    ctx.closePath()
+    ctx.fill()
+
+    ctx.fillStyle = bodyColor
+    ctx.beginPath()
+    ctx.roundRect(22, 43, 52, 35, 15)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.moveTo(42, 48)
+    ctx.lineTo(46, 37)
+    ctx.lineTo(54, 43)
+    ctx.lineTo(61, 31)
+    ctx.lineTo(68, 41)
+    ctx.lineTo(76, 39)
+    ctx.lineTo(72, 53)
+    ctx.closePath()
+    ctx.fill()
+    ctx.beginPath()
+    ctx.roundRect(52, 15, 35, 31, 10)
+    ctx.fill()
+    ctx.fillRect(72, 31, 22, 11)
+
+    ctx.fillStyle = '#d8ed9a'
+    ctx.beginPath()
+    ctx.ellipse(51, 61, 18, 10, 0, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.fillStyle = shadowColor
+    ctx.fillRect(39 + legOffset, 70, 10, 23)
+    ctx.fillRect(59 - legOffset, 70, 10, 23)
+    ctx.fillRect(34 + legOffset, 88, 18, 7)
+    ctx.fillRect(55 - legOffset, 88, 18, 7)
+    ctx.fillRect(57, 50, 15, 5)
+
+    ctx.fillStyle = '#ffffff'
+    ctx.beginPath()
+    ctx.arc(76, 25, 5, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = '#172a1c'
+    ctx.beginPath()
+    ctx.arc(78, 25, 2.5, 0, Math.PI * 2)
+    ctx.fill()
   }
 }

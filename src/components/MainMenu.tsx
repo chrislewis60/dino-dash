@@ -13,6 +13,10 @@ export function MainMenu() {
     startGame(2)
   }
 
+  function handleStartLevelThree() {
+    startGame(3)
+  }
+
   if (gameState !== 'menu') return null
 
   return (
@@ -34,6 +38,9 @@ export function MainMenu() {
           </button>
           <button className="btn btn-primary" onClick={handleStartLevelTwo}>
             Level 2
+          </button>
+          <button className="btn btn-primary" onClick={handleStartLevelThree}>
+            Level 3
           </button>
         </div>
         <section className="game-key" aria-labelledby="game-key-heading">

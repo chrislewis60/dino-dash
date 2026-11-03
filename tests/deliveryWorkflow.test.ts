@@ -172,12 +172,12 @@ describe('SPEC-004 Playbook adoption contracts', () => {
     for (const heading of ['Context', 'Decision', 'Options considered', 'Consequences']) {
       expect(text).toContain(`## ${heading}`)
     }
-    if (file.includes('0005-')) {
-      expect(text).toMatch(/^Status: Proposed/m)
-    } else {
+    if (/^000[1-4]-/.test(file.split(/[\\/]/).at(-1) ?? '')) {
       expect(text).toMatch(/^Status: Retrospective; rationale inferred; awaiting human review/m)
       expect(text).toContain('Original decision date and deciders: Unknown')
       expect(text).toContain('uncommitted gameplay changes')
+    } else {
+      expect(text).toMatch(/^Status: Proposed/m)
     }
     expect(text).not.toMatch(/^Status: Accepted/m)
   })

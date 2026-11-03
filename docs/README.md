@@ -28,6 +28,16 @@ They describe the observed system, not an instruction to reimplement it. Existin
 tests are mapped by file and test name; they have not been renamed to imply that
 the new acceptance IDs historically existed.
 
+## Proposed changes
+
+The level extension is [SPEC-006: Third-level artwork and difficulty](specs/0006-third-level-and-difficulty.md):
+locally implemented artwork/shortcut, moderate hazard progression and final
+completion, with human gate decisions pending.
+
+| Specification | Scope / status |
+|---|---|
+| [SPEC-005: Shared file-backed leaderboard](specs/0005-shared-file-leaderboard.md) | Draft v1 for review; shared casual board, server-owned text file; Understand only, no implementation or feature tests |
+
 ## Architecture Decision Records (ADRs)
 
 An ADR records **why** an important approach was chosen; a spec records **what**
@@ -40,6 +50,7 @@ observable outcome is required. “ADR” is the usual abbreviation, rather than
 | [0003: Typed level configuration](adr/0003-typed-level-configuration.md) | Retrospective; rationale inferred; awaiting review |
 | [0004: Earned score ledger](adr/0004-earned-score-ledger.md) | Retrospective; rationale inferred; awaiting review |
 | [0005: Repository-local Playbook](adr/0005-agentic-delivery-playbook.md) | Proposed; awaiting review |
+| [0006: Shared server-owned leaderboard file](adr/0006-shared-file-leaderboard.md) | Proposed v1; awaiting review |
 
 ## Use the workflow
 

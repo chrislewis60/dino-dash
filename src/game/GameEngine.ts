@@ -138,11 +138,9 @@ export class GameEngine {
 
   proceedToNextLevel(): void {
     if (!this.stateMachine.is('levelComplete')) return
+    // Keep final results available until the player returns to the menu.
+    if (this.levelIndex === LEVELS.length - 1) return
     this.levelIndex++
-    if (this.levelIndex >= LEVELS.length) {
-      this.stateMachine.transition('gameOver')
-      return
-    }
     this.stats.level = this.levelIndex + 1
     this.stats.activeLevel = LEVELS[this.levelIndex]
     this.resetLevel()

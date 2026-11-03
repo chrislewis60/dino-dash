@@ -3,6 +3,13 @@
 Observed 2026-11-03 at `e29a2cf` plus the current dirty working tree.
 This is source evidence, not an approved target architecture.
 
+Current local extension: [SPEC-006](../specs/0006-third-level-and-difficulty.md)
+wires the supplied third background, adds the Level 3 shortcut, moderates hazard
+progression and retains final-level completion results. It reuses the same
+configuration/rendering path without new systems or dependencies. The completion
+UI reads the last configured level; the engine guards against advancing past it.
+This does not retrospectively approve or replace the baseline observation below.
+
 ```text
 App -> GameProvider / GameContext -> GameEngine
   |               ^                  | StateMachine

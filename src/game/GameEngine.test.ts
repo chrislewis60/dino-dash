@@ -229,6 +229,36 @@ describe('GameEngine progress', () => {
     expect(engine.stateMachine.state).toBe('menu')
   })
 
+  it('SPEC-006-AC03/AC04 starts level 3 fresh and safely retains final completion until Menu', () => {
+    engine.togglePause()
+    engine.returnToMenu()
+    engine.startGame(3)
+    const initial = snapshots[snapshots.length - 1]
+    expect(engine.stateMachine.state).toBe('playing')
+    expect(initial).toEqual({
+      scoreBreakdown: { distance: 0, fossils: 0, stomps: 0, roar: 0 },
+      score: 0, lives: PLAYER_HEALTH.MAX_LIVES, level: 3,
+      distance: 0, fossils: 0, enemiesStomped: 0,
+      levelElapsedMs: 0, activeLevel: LEVELS[2],
+    })
+    isolateCollisions()
+    controls.update(100)
+    controls.update(LEVELS[2].lengthMs - 100)
+    expect(engine.stateMachine.state).toBe('levelComplete')
+    const final = snapshots[snapshots.length - 1]
+    expect(final.levelElapsedMs).toBe(LEVELS[2].lengthMs)
+    expect(final.score).toBeGreaterThan(0)
+    const warning = vi.spyOn(console, 'warn')
+    engine.proceedToNextLevel()
+    engine.proceedToNextLevel()
+    expect(warning).not.toHaveBeenCalled()
+    expect(engine.stateMachine.state).toBe('levelComplete')
+    expect(snapshots[snapshots.length - 1]).toEqual(final)
+    engine.returnToMenu()
+    engine.startGame()
+    expect(snapshots[snapshots.length - 1].activeLevel).toBe(LEVELS[0])
+  })
+
   it('publishes keyboard pause immediately without advancing pending frames', () => {
     controls.loop(100)
     globalThis.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))

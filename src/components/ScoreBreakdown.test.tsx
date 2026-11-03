@@ -13,7 +13,7 @@ const stats: GameStats = {
   scoreBreakdown: { distance: 125, fossils: 700, stomps: 150, roar: 225 },
   score: 1200,
   lives: 0,
-  level: 3,
+  level: 2,
   distance: 100,
   fossils: 7,
   enemiesStomped: 2,
@@ -46,6 +46,17 @@ function mockGame(gameState: GameState, resultStats = stats) {
 }
 
 describe('result score breakdown', () => {
+  it('SPEC-006-AC04 keeps final results and Menu without offering another level', () => {
+    const context = mockGame('levelComplete', { ...stats, level: 3 })
+    render(<LevelComplete />)
+    expect(screen.getByRole('heading', { name: /All Levels Complete!/ })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Score breakdown' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Next Level/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }))
+    expect(context.returnToMenu).toHaveBeenCalledOnce()
+    expect(context.proceedToNextLevel).not.toHaveBeenCalled()
+  })
+
   it.each(resultStates)('shows cumulative earned categories once on $gameState', ({ gameState, Component, totalLabel }) => {
     const context = mockGame(gameState)
     render(<Component />)

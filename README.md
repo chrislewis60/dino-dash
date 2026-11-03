@@ -35,11 +35,20 @@ clear wider hazards and slide beneath pterodactyls flying at head height.
 
 ## Gameplay
 
-Choose **Start Game** to begin at Jurassic Jungle, or **Level 2** beside it to
-start a fresh game directly in Volcanic Badlands.
+Choose **Start Game** to begin at Jurassic Jungle, **Level 2** to start a fresh
+game in Volcanic Badlands, or **Level 3** to jump straight to Meteor Impact Zone.
 The welcome screen shows a faded, blurred Jurassic Jungle background behind the menu.
 Volcanic Badlands uses the supplied panoramic volcanic background, with the same
 cover scaling and slow horizontal pan as Jurassic Jungle.
+Meteor Impact Zone uses the newly supplied sunset volcanic panorama with the same
+scaling and pan. Finishing it shows **All Levels Complete!**, your score breakdown
+and a Menu button instead of a nonexistent next level.
+
+Level 2 has more frequent obstacles than before. Level 3 adds roughly 15% more
+timed hazards than level 2, but spawns meteors and birds individually rather than
+in double waves. Its speed rises from 350 to a capped 600px/s (level 2: 320-560px/s).
+Eggs, power-ups and covered spike bridges remain available; random hazards can
+still overlap, so difficulty remains subject to play feedback.
 
 - Start at 100% health (5 lives), with a maximum of 5.
 - Collect eggs to restore one life, up to the maximum.

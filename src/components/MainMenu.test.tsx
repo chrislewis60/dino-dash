@@ -11,7 +11,7 @@ vi.mock('@/context/GameContext', () => ({
 }))
 
 describe('MainMenu', () => {
-  it('shows what to collect and avoid and still starts the game', () => {
+  it('SPEC-006-AC03 shows the game key and starts each level from its homepage button', () => {
     const startGame = vi.fn()
     vi.mocked(useGame).mockReturnValue({
       gameState: 'menu',
@@ -77,5 +77,9 @@ describe('MainMenu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Level 2' }))
     expect(startGame).toHaveBeenCalledTimes(2)
     expect(startGame).toHaveBeenLastCalledWith(2)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Level 3' }))
+    expect(startGame).toHaveBeenCalledTimes(3)
+    expect(startGame).toHaveBeenLastCalledWith(3)
   })
 })

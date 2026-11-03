@@ -3,6 +3,8 @@ export const BACKGROUND_IMAGES = {
     '/chrislewis60_create_a_background_for_a_platform_game_involving__e457c491-6959-4161-9888-58ac73e45a91.png',
   VOLCANIC_BADLANDS:
     '/chrislewis60_create_a_background_for_a_platform_game_involving__829c888d-db33-456a-a177-1bb3c19200c8.png',
+  METEOR_IMPACT_ZONE:
+    '/chrislewis60_create_a_background_for_a_platform_game_involving__e457c491-6959-4161-9888-58ac73e45a92.jpeg',
 } as const
 
 export const COLLECTABLE_ICONS = {

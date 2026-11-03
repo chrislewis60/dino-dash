@@ -7,7 +7,7 @@ interface GameContextValue {
   stats: GameStats
   gameState: GameState
   canvasRef: React.RefObject<HTMLCanvasElement | null>
-  startGame: () => void
+  startGame: (levelNumber?: number) => void
   togglePause: () => void
   proceedToNextLevel: () => void
   returnToMenu: () => void
@@ -16,6 +16,7 @@ interface GameContextValue {
 const GameContext = createContext<GameContextValue | null>(null)
 
 const INITIAL_STATS: GameStats = {
+  scoreBreakdown: { distance: 0, fossils: 0, stomps: 0, roar: 0 },
   score: 0,
   lives: PLAYER_HEALTH.INITIAL_LIVES,
   level: 1,
@@ -61,11 +62,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   }, [handleStatsChange])
 
-  const startGame = useCallback(() => {
-    engineRef.current?.startGame()
+  const startGame = useCallback((levelNumber?: number) => {
+    engineRef.current?.startGame(levelNumber)
     syncState()
-    setStats(INITIAL_STATS)
-    setGameState('playing')
   }, [syncState])
 
   const togglePause = useCallback(() => {

@@ -3,9 +3,10 @@ import { resolve } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { CanvasRenderer } from '@/canvas/CanvasRenderer'
-import { COLLECTABLE_ICONS, GAME_ICONS, HAZARD_ICONS } from '@/config/assets'
+import { BACKGROUND_IMAGES, COLLECTABLE_ICONS, DINOSAUR_ARTWORK, GAME_ICONS, HAZARD_ICONS } from '@/config/assets'
 import { LEVELS } from '@/game/levels'
-import { PLATFORM_Y } from '@/game/systems'
+import { CANVAS_HEIGHT, CANVAS_WIDTH, PLATFORM_Y } from '@/game/systems'
+import { SPIKE_LAYOUT } from '@/config/platforms'
 import type { RenderPayload } from '@/canvas/CanvasRenderer'
 
 class TestImage {
@@ -13,6 +14,7 @@ class TestImage {
   src = ''
   complete = true
   naturalWidth = 512
+  naturalHeight = 512
   onerror: (() => void) | null = null
 
   constructor() {
@@ -31,13 +33,17 @@ function setup() {
       return vi.fn()
     },
   })
+  ctx.measureText = vi.fn(() => ({
+    actualBoundingBoxLeft: 0, actualBoundingBoxRight: 100,
+    actualBoundingBoxAscent: 90, actualBoundingBoxDescent: 10,
+  }) as TextMetrics)
   const canvas = document.createElement('canvas')
-  vi.spyOn(canvas, 'getContext').mockReturnValue(ctx as CanvasRenderingContext2D)
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as CanvasRenderingContext2D)
   const renderer = new CanvasRenderer(canvas)
   const payload: RenderPayload = {
     player: {
       id: 'player', type: 'player', active: true, x: 100, y: 300, width: 40, height: 48,
-      velocityX: 0, velocityY: 0, state: 'dead', jumpsRemaining: 2, slideTimer: 0,
+      facingLeft: false, velocityX: 0, velocityY: 0, state: 'dead', jumpsRemaining: 2, slideTimer: 0,
       shield: false, shieldTimer: 0, sprintActive: false, sprintTimer: 0,
       magnetActive: false, magnetTimer: 0, roarActive: false, roarTimer: 0,
     },
@@ -54,7 +60,8 @@ function setup() {
     })),
     levelConfig: { ...LEVELS[0], backgroundImage: undefined },
     worldOffset: 0,
-    stats: { score: 0, lives: 3, level: 1, distance: 0, fossils: 0,
+    stats: { scoreBreakdown: { distance: 0, fossils: 0, stomps: 0, roar: 0 },
+      score: 0, lives: 3, level: 1, distance: 0, fossils: 0,
       enemiesStomped: 0, levelElapsedMs: 0, activeLevel: null },
     damageActive: false,
   }
@@ -67,6 +74,41 @@ afterEach(() => {
 })
 
 describe('game item artwork', () => {
+  it('renders the supplied level 2 background with cover scaling and no ground overlay', () => {
+    const { renderer, payload, drawImage, ctx } = setup()
+    payload.levelConfig = LEVELS[1]
+    payload.collectibles = []
+    payload.powerups = []
+    expect(payload.levelConfig.backgroundImage).toBe(BACKGROUND_IMAGES.VOLCANIC_BADLANDS)
+    const png = readFileSync(resolve('public', BACKGROUND_IMAGES.VOLCANIC_BADLANDS.slice(1)))
+    expect(png.subarray(1, 4).toString()).toBe('PNG')
+    const width = png.readUInt32BE(16)
+    const height = png.readUInt32BE(20)
+    renderer.render(payload)
+    const image = TestImage.instances.find(
+      (instance) => instance.src === BACKGROUND_IMAGES.VOLCANIC_BADLANDS,
+    )
+    expect(image).toBeDefined()
+    if (!image) throw new Error('Level 2 background was not loaded')
+    image.naturalWidth = width
+    image.naturalHeight = height
+    drawImage.mockClear()
+    const fillRect = vi.fn()
+    ctx.fillRect = fillRect
+    payload.worldOffset = 100
+    renderer.render(payload)
+    const scale = Math.max(CANVAS_WIDTH / width, CANVAS_HEIGHT / height)
+    expect(drawImage).toHaveBeenCalledExactlyOnceWith(
+      image,
+      -(100 * 0.108) % (width * scale - CANVAS_WIDTH || 1),
+      (CANVAS_HEIGHT - height * scale) / 2,
+      width * scale,
+      height * scale,
+    )
+    expect(fillRect).not.toHaveBeenCalled()
+    expect(TestImage.instances.filter((instance) => instance.src === image.src)).toHaveLength(1)
+  })
+
   it('bundles all ten transparent SVGs in the configured colours', () => {
     for (const icon of Object.values(GAME_ICONS)) {
       const svg = readFileSync(resolve('public', icon.source.slice(1)), 'utf8')
@@ -74,6 +116,80 @@ describe('game item artwork', () => {
       expect(svg).toContain(`fill="${icon.colour}"`)
       expect(svg).not.toContain('M0 0h512v512H0z')
     }
+  })
+
+  describe('player artwork', () => {
+    function setupPlayer() {
+      const result = setup()
+      result.payload.player.state = 'running'
+      result.payload.collectibles = []
+      result.payload.powerups = []
+      return result
+    }
+
+    it('uses the welcome emoji, caches it and leaves the hitbox unchanged', () => {
+      const { renderer, payload, drawImage, fillText } = setupPlayer()
+      const before = structuredClone(payload.player)
+      renderer.render(payload)
+      expect(fillText).toHaveBeenCalledExactlyOnceWith(DINOSAUR_ARTWORK.GLYPH, 0, 90)
+      expect(drawImage).toHaveBeenCalledTimes(3)
+      expect(drawImage.mock.calls[0][0]).toBeInstanceOf(HTMLCanvasElement)
+      renderer.render(payload)
+      expect(fillText).toHaveBeenCalledTimes(1)
+      expect(payload.player).toEqual(before)
+    })
+
+    it('mirrors the naturally left-facing emoji only when facing right', () => {
+      const { renderer, payload, ctx } = setupPlayer()
+      const scale = vi.fn()
+      ctx.scale = scale
+      renderer.render(payload)
+      expect(scale).toHaveBeenCalledWith(-1, 1)
+      scale.mockClear()
+      payload.player.facingLeft = true
+      renderer.render(payload)
+      expect(scale).not.toHaveBeenCalledWith(-1, 1)
+    })
+
+    it('swings both legs in opposite directions whilst running', () => {
+      const { renderer, payload, ctx } = setupPlayer()
+      const transform = vi.fn()
+      ctx.transform = transform
+      vi.spyOn(Date, 'now').mockReturnValue(DINOSAUR_ARTWORK.STRIDE_MS / 4)
+      renderer.render(payload)
+      expect(transform).toHaveBeenNthCalledWith(1, 1, 0, DINOSAUR_ARTWORK.LEG_SWING, 1, 0, 0)
+      expect(transform).toHaveBeenNthCalledWith(2, 1, 0, -DINOSAUR_ARTWORK.LEG_SWING, 1, 0, 0)
+      transform.mockClear()
+      vi.mocked(Date.now).mockReturnValue(DINOSAUR_ARTWORK.STRIDE_MS * 3 / 4)
+      renderer.render(payload)
+      expect(transform).toHaveBeenNthCalledWith(1, 1, 0, -DINOSAUR_ARTWORK.LEG_SWING, 1, 0, 0)
+    })
+
+    it('completes a stride in 320ms, 50% faster than the original 480ms cycle', () => {
+      expect(DINOSAUR_ARTWORK.STRIDE_MS).toBe(480 / 1.5)
+    })
+
+    it.each(['jumping', 'doubleJumping', 'sliding'] as const)('keeps the legs still when %s', (state) => {
+      const { renderer, payload, ctx } = setupPlayer()
+      const transform = vi.fn()
+      ctx.transform = transform
+      payload.player.state = state
+      renderer.render(payload)
+      expect(transform).toHaveBeenNthCalledWith(1, 1, 0, 0, 1, 0, 0)
+      expect(transform).toHaveBeenNthCalledWith(2, 1, 0, -0, 1, 0, 0)
+    })
+
+    it('draws sprint trails in world coordinates behind the facing direction', () => {
+      const { renderer, payload, ctx } = setupPlayer()
+      const fillRect = vi.fn()
+      ctx.fillRect = fillRect
+      payload.player.sprintActive = true
+      renderer.render(payload)
+      expect(fillRect).toHaveBeenCalledWith(88, 300, 40, 48)
+      payload.player.facingLeft = true
+      renderer.render(payload)
+      expect(fillRect).toHaveBeenCalledWith(112, 300, 40, 48)
+    })
   })
 
   it('preloads and reuses every icon at 150% size without changing pickup hitboxes', () => {
@@ -141,6 +257,34 @@ describe('game item artwork', () => {
     renderer.render(payload)
     expect(error).toHaveBeenCalledWith('Unable to load game icon: /icons/fossil.svg')
     expect(fillText).toHaveBeenCalledWith('!', 210, 210)
+  })
+
+  it('tiles long spike beds without stretching the artwork or changing the hitbox', () => {
+    const { renderer, payload, drawImage } = setup()
+    payload.collectibles = []
+    payload.powerups = []
+    const spikes = {
+      id: 'long-spikes', type: SPIKE_LAYOUT.ENTITY_TYPE, active: true,
+      x: 100, y: PLATFORM_Y - SPIKE_LAYOUT.HEIGHT,
+      width: 1440, height: SPIKE_LAYOUT.HEIGHT,
+    }
+    payload.spikePits = [spikes]
+    const before = structuredClone(spikes)
+
+    renderer.render(payload)
+
+    expect(drawImage).toHaveBeenCalledTimes(16)
+    for (let tile = 0; tile < 16; tile++) {
+      expect(drawImage).toHaveBeenNthCalledWith(
+        tile + 1,
+        expect.objectContaining({ src: HAZARD_ICONS.spikePit.source }),
+        spikes.x + tile * 90 - 22.5,
+        spikes.y - 10,
+        135,
+        30,
+      )
+    }
+    expect(spikes).toEqual(before)
   })
 
   it('uses matching hazard icons without changing hitboxes, shadows or lava columns', () => {

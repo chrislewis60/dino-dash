@@ -21,16 +21,18 @@ and collecting fossils and eggs to survive.
 | Jump | Space / Up arrow / Tap |
 | Double jump | Space / Up again mid-air |
 | Slide | Down arrow / Swipe down |
+| Move / face left or right | Left / Right arrow |
 
 ### Player States
 `running → jumping → doubleJumping → sliding → dead`
 
-- The player is always moving right (auto-scroll)
+- The world auto-scrolls; arrow keys move the player and set its facing direction
+- The welcome screen's dinosaur emoji is reused in-game, with animated running legs
 - Sliding reduces hitbox height to duck under pterodactyls
 - Double jump gives a second chance over wide hazards
 
 ### Lives & Damage
-- Start with **3 lives**, maximum **5**
+- Start at **100% health (5 lives)**, maximum **5**
 - Brief **1.5s invincibility** after taking damage
 - Eggs collected grant +1 life (up to max)
 
@@ -47,6 +49,14 @@ and collecting fossils and eggs to survive.
 | Egg collected | +1 life (no score) |
 
 Each level has a `scoreMultiplier` applied to all points earned in that level.
+Result screens show cumulative distance, fossil, stomp and roar points, recorded
+when earned so changing level multipliers do not alter earlier rewards. Integer
+display rounding is allocated across categories so they add up to the final score.
+
+To stomp a pterodactyl, fall onto its back from above. Landing checks follow the
+player and enemy between frames, including fast falls that pass through the
+enemy's top in one frame. A successful stomp removes the enemy and bounces the
+player before contact damage is checked; side and underside contact do not count.
 
 ---
 
@@ -68,15 +78,26 @@ Each level has a `scoreMultiplier` applied to all points earned in that level.
 | `meteor` | Falls diagonally from top-right; shadow warns of impact point |
 | `lavaVent` | Ground-based; cycles idle → warning → erupting → cooling |
 | `pterodactyl` | Flies horizontally at head height; player must slide |
-| `spikePit` | Static ground obstacle; player must jump over; deals damage on contact |
+| `spikePit` | Short ground obstacles can be jumped; long beds require the covering platform; deals damage on contact |
 
 ## Platforms
 
 Elevated rectangular surfaces that scroll with the world. The player can jump onto them from below (one-way: land on top only). Landing on a platform resets the player's double jump.
 
 - Spawned by `SpawnSystem` like other entities — scroll left and despawn off-screen
-- Heights vary randomly from 80–320px above ground, with changes capped at 80px between neighbours
-- Width varies from 160–440px per spawn, with 50px gaps between platforms
+- Heights vary randomly from 80–320px above ground, starting at 80px
+- Random climbs are capped at 80px; descents can drop up to 240px
+- Height changes are at least 40px unless approaching the elevation limits
+- Climbing and descending are chosen with equal probability where both are possible
+- Ordinary platforms vary from 160–440px wide, with 50px gaps
+- Every sixth platform is an 1800–2200px continuous bridge covering a long spike bed,
+  with 180px of safe platform at either end. Even at maximum speed, the spike bed
+  exceeds the distance covered by a double jump
+- Long spike artwork repeats across the bed rather than stretching a single icon
+- Each bridge is followed by a 2200px platform-free gap, forcing a return to the
+  floor. The next section restarts at the reachable 80px elevation
+- Descending platforms have a minimum landing width based on fall time and the level's
+  maximum scroll speed, so even the largest drops remain landable
 - Fossils appear above platforms to reward elevated routes
 - Defined via `spawnRules` in `LevelConfig` using `entityType: 'platform'`
 - `crumbling` field exists on `PlatformEntity` but is not yet active
@@ -87,9 +108,9 @@ Elevated rectangular surfaces that scroll with the world. The player can jump on
 
 | # | Name | Theme | Duration | Base Speed | Max Speed | Multiplier |
 |---|---|---|---|---|---|---|
-| 1 | Jurassic Jungle | Dense green forest | 60s | 260 px/s | 480 px/s | ×1.0 |
-| 2 | Volcanic Badlands | Dark volcanic terrain with lava pools | 75s | 320 px/s | 560 px/s | ×1.5 |
-| 3 | Meteor Impact Zone | Night sky, craters, constant barrage | TBD | TBD | TBD | TBD |
+| 1 | Jurassic Jungle | Dense green forest | 90s | 260 px/s | 480 px/s | ×1.0 |
+| 2 | Volcanic Badlands | Dark volcanic terrain with lava pools | 120s | 320 px/s | 560 px/s | ×1.5 |
+| 3 | Meteor Impact Zone | Night sky, craters, constant barrage | 150s | 400 px/s | 700 px/s | ×2.0 |
 
 Speed increases continuously within a level via `speedRampPerSecond`.
 

@@ -1,8 +1,17 @@
 import { useGame } from '@/context/GameContext'
 import { GAME_KEY } from '@/config/gameKey'
+import { DINOSAUR_ARTWORK } from '@/config/assets'
 
 export function MainMenu() {
   const { gameState, startGame } = useGame()
+
+  function handleStartGame() {
+    startGame()
+  }
+
+  function handleStartLevelTwo() {
+    startGame(2)
+  }
 
   if (gameState !== 'menu') return null
 
@@ -10,12 +19,17 @@ export function MainMenu() {
     <div className="overlay menu-overlay">
       <div className="menu-panel main-menu-panel">
         <h1 className="menu-title">
-          🦖 Dino Dash
+          {DINOSAUR_ARTWORK.GLYPH} Dino Dash
         </h1>
         <p className="menu-subtitle">Extinction Run</p>
-        <button className="btn btn-primary" onClick={startGame}>
-          Start Game
-        </button>
+        <div className="menu-start-actions">
+          <button className="btn btn-primary" onClick={handleStartGame}>
+            Start Game
+          </button>
+          <button className="btn btn-primary" onClick={handleStartLevelTwo}>
+            Level 2
+          </button>
+        </div>
         <section className="game-key" aria-labelledby="game-key-heading">
           <h2 id="game-key-heading">Game Details</h2>
           <div className="game-key-groups">

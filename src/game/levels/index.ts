@@ -58,13 +58,16 @@ export const level1: LevelConfig = {
   baseSpeedPx: 260,
   maxSpeedPx: 480,
   speedRampPerSecond: 8,
-  lengthMs: 180_000,
+  lengthMs: 90_000,
   scoreMultiplier: 1,
 }
 
 export const level2: LevelConfig = {
   id: 2,
   name: 'Volcanic Badlands',
+  backgroundImage: BACKGROUND_IMAGES.VOLCANIC_BADLANDS,
+  backgroundScrollFactor: 0.108,
+  showGround: false,
   skyColor: '#2b1a0e',
   groundColor: '#3d1a00',
   platformColor: '#5c2a00',
@@ -104,7 +107,7 @@ export const level2: LevelConfig = {
   baseSpeedPx: 320,
   maxSpeedPx: 560,
   speedRampPerSecond: 10,
-  lengthMs: 240_000,
+  lengthMs: 120_000,
   scoreMultiplier: 1.5,
 }
 
@@ -152,7 +155,7 @@ export const level3: LevelConfig = {
   baseSpeedPx: 400,
   maxSpeedPx: 700,
   speedRampPerSecond: 14,
-  lengthMs: 300_000,
+  lengthMs: 150_000,
   scoreMultiplier: 2,
 }
 

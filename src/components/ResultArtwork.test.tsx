@@ -19,6 +19,7 @@ describe('result artwork', () => {
       vi.mocked(useGame).mockReturnValue({
         gameState,
         stats: {
+          scoreBreakdown: { distance: 100, fossils: 400, stomps: 0, roar: 0 },
           score: 500, lives: 3, level: 1, distance: 100, fossils: 7,
           enemiesStomped: 0, levelElapsedMs: 0, activeLevel: null,
         },

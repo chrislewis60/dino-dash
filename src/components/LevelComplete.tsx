@@ -1,5 +1,5 @@
 import { useGame } from '@/context/GameContext'
-import { COLLECTABLE_ICONS } from '@/config/assets'
+import { ScoreBreakdown } from '@/components/ScoreBreakdown'
 
 export function LevelComplete() {
   const { gameState, stats, proceedToNextLevel, returnToMenu } = useGame()
@@ -11,27 +11,7 @@ export function LevelComplete() {
       <div className="menu-panel">
         <h2 className="level-title">🎉 Level {stats.level} Complete!</h2>
         <p className="level-name">{stats.activeLevel?.name ?? ''}</p>
-        <div className="score-summary">
-          <div className="score-row">
-            <span>Distance</span>
-            <span>{stats.distance}m</span>
-          </div>
-          <div className="score-row">
-            <span>Fossils</span>
-            <span>
-              <img className="collectable-icon" src={COLLECTABLE_ICONS.fossil.source} alt="" />
-              {' '}{stats.fossils}
-            </span>
-          </div>
-          <div className="score-row">
-            <span>Enemies Stomped</span>
-            <span>🦶 {stats.enemiesStomped}</span>
-          </div>
-          <div className="score-row total">
-            <span>Score</span>
-            <span>{Math.floor(stats.score)}</span>
-          </div>
-        </div>
+        <ScoreBreakdown stats={stats} totalLabel="Score" />
         <div className="level-actions">
           <button className="btn btn-primary" onClick={proceedToNextLevel}>
             Next Level →

@@ -9,15 +9,16 @@ vi.mock('@/context/GameContext', () => ({ useGame: vi.fn() }))
 
 describe('HUD', () => {
   it.each([
-    { lives: 3, elapsed: 90_000, health: 60, progress: 50 },
+    { lives: 3, elapsed: 45_000, health: 60, progress: 50 },
     { lives: 0, elapsed: 0, health: 0, progress: 0 },
-    { lives: 5, elapsed: 180_000, health: 100, progress: 100 },
+    { lives: 5, elapsed: 90_000, health: 100, progress: 100 },
     { lives: 8, elapsed: 200_000, health: 100, progress: 100 },
   ])('shows health $health% and progress $progress%', ({ lives, elapsed, health, progress }) => {
     const togglePause = vi.fn()
     vi.mocked(useGame).mockReturnValue({
       gameState: 'playing',
       stats: {
+        scoreBreakdown: { distance: 0, fossils: 0, stomps: 0, roar: 0 },
         score: 0, lives, level: 1, distance: 0, fossils: 0,
         enemiesStomped: 0, levelElapsedMs: elapsed, activeLevel: LEVELS[0],
       },

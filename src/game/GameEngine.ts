@@ -20,17 +20,12 @@ import { InputSystem } from './systems/InputSystem'
 import { CanvasRenderer } from '@/canvas/CanvasRenderer'
 import { LEVELS } from './levels/index'
 import { clamp, hasPassedLeftEdge } from '@/utils'
-import { PLAYER_HEALTH } from '@/config/gameplay'
+import { PLAYER_HEALTH, SCORING } from '@/config/gameplay'
 
 const FIXED_TIMESTEP_MS = 1000 / 60  // 60 fps fixed timestep
 const MAX_FRAME_MS = 200             // cap to prevent spiral-of-death
 const { MAX_LIVES, INITIAL_LIVES } = PLAYER_HEALTH
 const INVINCIBILITY_MS = 1500        // brief invincibility after taking damage
-const DISTANCE_SCORE_FACTOR = 0.05   // score per pixel scrolled
-const FOSSIL_SCORE = 50
-const EGG_SCORE = 0                  // eggs give a life, not score
-const ENEMY_STOMP_SCORE = 200
-const ROAR_SCORE = 150               // per entity cleared by roar
 
 export class GameEngine {
   readonly stateMachine = new StateMachine()
@@ -77,6 +72,7 @@ export class GameEngine {
     this.spawn = new SpawnSystem(firstLevel, () => this.worldSpeed)
 
     this.stats = {
+      scoreBreakdown: { distance: 0, fossils: 0, stomps: 0, roar: 0 },
       score: 0,
       lives: INITIAL_LIVES,
       level: 1,
@@ -106,20 +102,25 @@ export class GameEngine {
 
   // ─── Public API ────────────────────────────────────────────────────────────
 
-  startGame(): void {
-    this.levelIndex = 0
+  startGame(levelNumber = 1): void {
+    const levelIndex = LEVELS.findIndex((level) => level.id === levelNumber)
+    if (levelIndex < 0) throw new RangeError(`Unknown starting level: ${levelNumber}`)
+    this.levelIndex = levelIndex
+    this.worldOffset = 0
     this.stats = {
+      scoreBreakdown: { distance: 0, fossils: 0, stomps: 0, roar: 0 },
       score: 0,
       lives: INITIAL_LIVES,
-      level: 1,
+      level: levelNumber,
       distance: 0,
       fossils: 0,
       enemiesStomped: 0,
       levelElapsedMs: 0,
-      activeLevel: LEVELS[0],
+      activeLevel: LEVELS[levelIndex],
     }
     this.resetLevel()
     this.stateMachine.transition('playing')
+    this.onStatsChange({ ...this.stats })
     this.startLoop()
   }
 
@@ -245,12 +246,16 @@ export class GameEngine {
     this.stats.distance = Math.floor(this.worldOffset / 10)  // in decametres
 
     // Score for distance
-    this.stats.score += scrollDelta * DISTANCE_SCORE_FACTOR * levelConfig.scoreMultiplier
+    this.awardPoints('distance', scrollDelta * SCORING.DISTANCE_PER_PIXEL)
 
     // Spawn entities
     this.spawn.tick(deltaMs, this.meteors, this.vents, this.pterodactyls, this.collectibles, this.powerups, this.platforms, this.spikePits)
 
     // Physics
+    const previousPlayer = { ...this._player }
+    const previousPterodactyls = new Map(
+      this.pterodactyls.map((enemy) => [enemy.id, { ...enemy }]),
+    )
     this.physics.updatePlayer(this._player, inputState, deltaMs, this.worldSpeed, this.platforms)
     this.physics.updateMagnetCollectibles(this._player, this.collectibles, deltaMs)
 
@@ -260,6 +265,15 @@ export class GameEngine {
     // Remove off-screen entities
     this.prune()
 
+    // Resolve landings before damage so a successful stomp cannot also hurt the player.
+    const stomps = this.collision.checkStomps(
+      this._player, this.pterodactyls, previousPlayer, previousPterodactyls,
+    )
+    if (stomps > 0) {
+      this.stats.enemiesStomped += stomps
+      this.awardPoints('stomps', stomps * SCORING.STOMP)
+    }
+
     // Collision — hazards
     if (this.invincibilityTimer > 0) {
       this.invincibilityTimer -= deltaMs
@@ -268,22 +282,14 @@ export class GameEngine {
       if (hit) this.handleDamage()
     }
 
-    // Collision — stomps
-    const stomps = this.collision.checkStomps(this._player, this.pterodactyls)
-    if (stomps > 0) {
-      this.stats.enemiesStomped += stomps
-      this.stats.score += stomps * ENEMY_STOMP_SCORE * levelConfig.scoreMultiplier
-    }
-
     // Collision — collectibles
     const picked = this.collision.checkCollectibles(this._player, this.collectibles)
     for (const c of picked) {
       if (c.type === 'fossil') {
         this.stats.fossils++
-        this.stats.score += FOSSIL_SCORE * levelConfig.scoreMultiplier
+        this.awardPoints('fossils', SCORING.FOSSIL)
       } else if (c.type === 'egg') {
         this.stats.lives = Math.min(this.stats.lives + 1, MAX_LIVES)
-        this.stats.score += EGG_SCORE
       }
     }
 
@@ -308,13 +314,24 @@ export class GameEngine {
       this.stopLoop()
       this.onStatsChange({ ...this.stats })
     }
+
+  }
+
+  private awardPoints(category: keyof GameStats['scoreBreakdown'], points: number): void {
+    this.stats.scoreBreakdown = {
+      ...this.stats.scoreBreakdown,
+      [category]: this.stats.scoreBreakdown[category] + points * LEVELS[this.levelIndex].scoreMultiplier,
+    }
+    this.stats.score = Object.values(this.stats.scoreBreakdown).reduce(
+      (total, categoryPoints) => total + categoryPoints, 0,
+    )
   }
 
   private triggerRoar(): void {
     let cleared = 0
     for (const m of this.meteors) { if (m.active) { m.active = false; cleared++ } }
     for (const p of this.pterodactyls) { if (p.active) { p.active = false; cleared++ } }
-    this.stats.score += cleared * ROAR_SCORE * LEVELS[this.levelIndex].scoreMultiplier
+    this.awardPoints('roar', cleared * SCORING.ROAR_PER_HAZARD)
   }
 
   private updateHazards(deltaMs: number): void {

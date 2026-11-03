@@ -16,7 +16,7 @@ export const GAME_KEY = {
   AVOID: [
     { id: 'meteor', label: 'Meteors', detail: 'Falling fireballs', ...HAZARD_ICONS.meteor, symbol: '' },
     { id: 'lavaVent', label: 'Lava vents', detail: 'Erupting lava', ...HAZARD_ICONS.lavaVent, symbol: '' },
-    { id: 'pterodactyl', label: 'Pterodactyls', detail: 'Diving enemies', ...HAZARD_ICONS.pterodactyl, symbol: '' },
+    { id: 'pterodactyl', label: 'Pterodactyls', detail: 'Avoid dives; land on backs to stomp', ...HAZARD_ICONS.pterodactyl, symbol: '' },
     { id: 'spikePit', label: 'Spikes', detail: 'Sharp ground hazards', ...HAZARD_ICONS.spikePit, symbol: '' },
   ],
 } as const

@@ -9,9 +9,11 @@ import type {
   PowerUpEntity,
   LevelConfig,
   InputState,
+  Rect,
 } from '@/types'
 import { generateId, randomBetween, randomInt } from '@/utils'
-import { PLATFORM_LAYOUT } from '@/config/platforms'
+import { PLATFORM_LAYOUT, SPIKE_LAYOUT } from '@/config/platforms'
+import { STOMP } from '@/config/gameplay'
 
 const CANVAS_WIDTH = 1196
 const CANVAS_HEIGHT = 650
@@ -24,6 +26,7 @@ export class SpawnSystem {
   private timers = new Map<string, number>()
   private platformElevation: number | null = null
   private platformDistanceRemaining: number | null = null
+  private platformsInSection = 0
 
   constructor(
     private levelConfig: LevelConfig,
@@ -36,6 +39,7 @@ export class SpawnSystem {
     this.timers.clear()
     this.platformElevation = null
     this.platformDistanceRemaining = null
+    this.platformsInSection = 0
     for (const rule of this.levelConfig.spawnRules) {
       this.timers.set(rule.entityType, rule.intervalMs)
     }
@@ -81,13 +85,24 @@ export class SpawnSystem {
             case 'egg':         collectibles.push(this.createEgg()); break
             case 'powerup':     powerups.push(this.createPowerUp()); break
             case PLATFORM_LAYOUT.ENTITY_TYPE: {
-              const platform = this.createPlatform()
+              this.platformsInSection += 1
+              const isBridge = this.platformsInSection === PLATFORM_LAYOUT.PLATFORMS_PER_SECTION
+              const platform = this.createPlatform(isBridge)
               platforms.push(platform)
               collectibles.push(this.createPlatformFossil(platform))
-              this.platformDistanceRemaining = platform.width + PLATFORM_LAYOUT.GAP
+              this.platformDistanceRemaining = platform.width +
+                (isBridge ? PLATFORM_LAYOUT.GROUND_GAP : PLATFORM_LAYOUT.GAP)
+              if (isBridge) {
+                spikePits.push(this.createSpikePit(
+                  platform.x + PLATFORM_LAYOUT.SPIKE_MARGIN,
+                  platform.width - PLATFORM_LAYOUT.SPIKE_MARGIN * 2,
+                ))
+                this.platformsInSection = 0
+                this.platformElevation = null
+              }
               break
             }
-            case 'spikePit':    spikePits.push(this.createSpikePit()); break
+            case SPIKE_LAYOUT.ENTITY_TYPE: spikePits.push(this.createSpikePit()); break
           }
         }
       } else if (distanceRemaining === null) {
@@ -98,10 +113,17 @@ export class SpawnSystem {
     }
   }
 
-  private createPlatform(): PlatformEntity {
-    const width = randomBetween(PLATFORM_LAYOUT.MIN_WIDTH, PLATFORM_LAYOUT.MAX_WIDTH)
-    const height = PLATFORM_LAYOUT.HEIGHT
+  private createPlatform(isBridge: boolean): PlatformEntity {
+    const previousElevation = this.platformElevation ?? PLATFORM_LAYOUT.MIN_ELEVATION
     this.platformElevation = this.nextPlatformElevation()
+    const drop = Math.max(0, previousElevation - this.platformElevation)
+    // Leave enough landing surface to fall onto at the level's fastest scroll speed.
+    const landingWidth = this.levelConfig.maxSpeedPx * Math.sqrt(2 * drop / GRAVITY) + NORMAL_WIDTH
+    const width = randomBetween(
+      isBridge ? PLATFORM_LAYOUT.BRIDGE_MIN_WIDTH : Math.max(PLATFORM_LAYOUT.MIN_WIDTH, landingWidth),
+      isBridge ? PLATFORM_LAYOUT.BRIDGE_MAX_WIDTH : PLATFORM_LAYOUT.MAX_WIDTH,
+    )
+    const height = PLATFORM_LAYOUT.HEIGHT
     const y = PLATFORM_Y - this.platformElevation
     return {
       id: generateId(),
@@ -118,21 +140,25 @@ export class SpawnSystem {
 
   private nextPlatformElevation(): number {
     if (this.platformElevation === null) return PLATFORM_LAYOUT.MIN_ELEVATION
-    return randomBetween(
-      Math.max(PLATFORM_LAYOUT.MIN_ELEVATION, this.platformElevation - PLATFORM_LAYOUT.MAX_HEIGHT_CHANGE),
-      Math.min(PLATFORM_LAYOUT.MAX_ELEVATION, this.platformElevation + PLATFORM_LAYOUT.MAX_HEIGHT_CHANGE),
-    )
+    const rise = Math.min(PLATFORM_LAYOUT.MAX_RISE, PLATFORM_LAYOUT.MAX_ELEVATION - this.platformElevation)
+    const drop = Math.min(PLATFORM_LAYOUT.MAX_DROP, this.platformElevation - PLATFORM_LAYOUT.MIN_ELEVATION)
+    if (drop === 0 || (rise > 0 && Math.random() < 0.5)) {
+      return this.platformElevation + randomBetween(Math.min(PLATFORM_LAYOUT.MIN_HEIGHT_CHANGE, rise), rise)
+    }
+    return this.platformElevation - randomBetween(Math.min(PLATFORM_LAYOUT.MIN_HEIGHT_CHANGE, drop), drop)
   }
 
-  private createSpikePit(): SpikePitEntity {
-    const width = randomBetween(40, 90)
+  private createSpikePit(
+    x = SPAWN_X,
+    width = randomBetween(SPIKE_LAYOUT.MIN_WIDTH, SPIKE_LAYOUT.MAX_WIDTH),
+  ): SpikePitEntity {
     return {
       id: generateId(),
-      type: 'spikePit',
-      x: SPAWN_X,
-      y: PLATFORM_Y - 20,  // sits flush with ground surface
+      type: SPIKE_LAYOUT.ENTITY_TYPE,
+      x,
+      y: PLATFORM_Y - SPIKE_LAYOUT.HEIGHT,  // sits flush with ground surface
       width,
-      height: 20,
+      height: SPIKE_LAYOUT.HEIGHT,
       active: true,
     }
   }
@@ -325,6 +351,7 @@ export class PhysicsSystem {
 
     // ── Horizontal player motion ──
     const horizontalDirection = Number(input.moveRight) - Number(input.moveLeft)
+    if (horizontalDirection !== 0) player.facingLeft = horizontalDirection < 0
     player.velocityX = horizontalDirection * PLAYER_HORIZONTAL_SPEED
     const minX = PLAYER_HORIZONTAL_BOUNDARY
     const maxX = CANVAS_WIDTH - player.width - PLAYER_HORIZONTAL_BOUNDARY
@@ -415,25 +442,36 @@ export class CollisionSystem {
   checkStomps(
     player: PlayerEntity,
     pterodactyls: PterodactylEntity[],
+    previousPlayer: Rect,
+    previousPterodactyls: ReadonlyMap<string, Rect>,
   ): number {
-    if (player.velocityY <= 0) return 0
-    let count = 0
+    if (player.state === 'dead' || player.velocityY <= 0) return 0
+    let landing: PterodactylEntity | undefined
+    let firstCrossing = Infinity
     for (const p of pterodactyls) {
       if (!p.active) continue
-      // Player must be falling AND land on top of pterodactyl
-      const playerBottom = player.y + player.height
-      const headRoom = 15
+      const previousEnemy = previousPterodactyls.get(p.id)
+      if (!previousEnemy) continue
+      const previousGap = previousPlayer.y + previousPlayer.height - previousEnemy.y
+      const gap = player.y + player.height - p.y
+      if (previousGap > 0 || gap < 0 || gap <= previousGap) continue
+      const crossing = -previousGap / (gap - previousGap)
+      const playerX = previousPlayer.x + (player.x - previousPlayer.x) * crossing
+      const enemyX = previousEnemy.x + (p.x - previousEnemy.x) * crossing
       if (
-        aabbOverlap(player.x, player.y, player.width, player.height,
-                     p.x, p.y, p.width, p.height) &&
-        playerBottom <= p.y + headRoom
+        crossing < firstCrossing &&
+        playerX < enemyX + p.width &&
+        playerX + player.width > enemyX
       ) {
-        p.active = false
-        player.velocityY = -400  // bounce
-        count++
+        landing = p
+        firstCrossing = crossing
       }
     }
-    return count
+    if (!landing) return 0
+    landing.active = false
+    player.y = landing.y - player.height
+    player.velocityY = STOMP.BOUNCE_VELOCITY
+    return 1
   }
 
   checkCollectibles(
@@ -475,6 +513,7 @@ export function createPlayer(): PlayerEntity {
   return {
     id: 'player',
     type: 'player',
+    facingLeft: false,
     x: 120,
     y: PLATFORM_Y - NORMAL_HEIGHT,
     width: NORMAL_WIDTH,

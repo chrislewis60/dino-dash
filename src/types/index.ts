@@ -47,6 +47,7 @@ export interface Entity {
 
 export interface PlayerEntity extends Entity {
   type: 'player'
+  facingLeft: boolean
   velocityX: number
   velocityY: number
   state: PlayerState
@@ -152,6 +153,12 @@ export interface BackgroundShape {
 // ─── Score & Game Stats ───────────────────────────────────────────────────────
 
 export interface GameStats {
+  scoreBreakdown: {
+    distance: number
+    fossils: number
+    stomps: number
+    roar: number
+  }
   score: number
   lives: number
   level: number

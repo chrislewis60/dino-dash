@@ -13,7 +13,8 @@ import type {
   Rect,
 } from '@/types'
 import { PLATFORM_Y, CANVAS_WIDTH, CANVAS_HEIGHT } from '@/game/systems/index'
-import { COLLECTABLE_ICONS, GAME_ICONS, GAME_ICON_LAYOUT } from '@/config/assets'
+import { COLLECTABLE_ICONS, DINOSAUR_ARTWORK, GAME_ICONS, GAME_ICON_LAYOUT } from '@/config/assets'
+import { SPIKE_LAYOUT } from '@/config/platforms'
 
 export interface RenderPayload {
   player: PlayerEntity
@@ -37,6 +38,7 @@ export class CanvasRenderer {
   private readonly backgroundImages = new Map<string, HTMLImageElement>()
   private readonly iconImages = new Map<string, HTMLImageElement>()
   private readonly failedIconImages = new Set<string>()
+  private dinosaurArtwork: HTMLCanvasElement | null = null
 
   constructor(_canvas: HTMLCanvasElement) {
     const ctx = _canvas.getContext('2d')
@@ -186,7 +188,16 @@ export class CanvasRenderer {
       ctx.save()
       ctx.shadowColor = '#16251f'
       ctx.shadowBlur = 3
-      this.drawGameIcon(s, s.type)
+      const tileCount = Math.ceil(s.width / SPIKE_LAYOUT.MAX_WIDTH)
+      const tileWidth = s.width / tileCount
+      for (let tile = 0; tile < tileCount; tile++) {
+        this.drawGameIcon({
+          x: s.x + tile * tileWidth,
+          y: s.y,
+          width: tileWidth,
+          height: s.height,
+        }, s.type)
+      }
       ctx.restore()
     }
   }
@@ -343,76 +354,68 @@ export class CanvasRenderer {
     const drawWidth = drawHeight
     const drawY = player.y + player.height - drawHeight
     const drawX = player.x + player.width / 2 - drawWidth / 2
-    const runningFrame = player.state === 'running' ? Math.floor(Date.now() / 120) % 2 : 0
+    const legSwing = player.state === 'running'
+      ? Math.sin(Date.now() / DINOSAUR_ARTWORK.STRIDE_MS * Math.PI * 2) * DINOSAUR_ARTWORK.LEG_SWING
+      : 0
 
+    ctx.save()
     ctx.translate(drawX, drawY)
-    ctx.scale(drawWidth / 100, drawHeight / 100)
-    this.drawDinosaur(runningFrame, damageActive)
+    if (!player.facingLeft) {
+      ctx.translate(drawWidth, 0)
+      ctx.scale(-1, 1)
+    }
+    ctx.scale(drawWidth / DINOSAUR_ARTWORK.SIZE, drawHeight / DINOSAUR_ARTWORK.SIZE)
+    if (damageActive) ctx.filter = 'sepia(1) saturate(3) hue-rotate(320deg)'
+    this.drawDinosaur(legSwing)
+    ctx.restore()
 
     // Sprint trail effect
     if (player.sprintActive) {
       for (let i = 1; i <= 3; i++) {
         ctx.globalAlpha = 0.2 * (4 - i) / 3
         ctx.fillStyle = '#ffcc00'
-        ctx.fillRect(player.x - i * 12, player.y, player.width, player.height)
+        const trailDirection = player.facingLeft ? 1 : -1
+        ctx.fillRect(player.x + trailDirection * i * 12, player.y, player.width, player.height)
       }
     }
 
     ctx.restore()
   }
 
-  private drawDinosaur(runningFrame: number, damageActive: boolean): void {
+  private getDinosaurArtwork(): HTMLCanvasElement {
+    if (this.dinosaurArtwork) return this.dinosaurArtwork
+    const { GLYPH, FONT, SIZE } = DINOSAUR_ARTWORK
+    const artwork = document.createElement('canvas')
+    artwork.width = SIZE
+    artwork.height = SIZE
+    const ctx = artwork.getContext('2d')
+    if (!ctx) throw new Error('Dinosaur artwork 2D context unavailable')
+    ctx.font = FONT
+    const metrics = ctx.measureText(GLYPH)
+    const width = metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight
+    const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
+    ctx.setTransform(SIZE / width, 0, 0, SIZE / height, 0, 0)
+    ctx.fillText(GLYPH, metrics.actualBoundingBoxLeft, metrics.actualBoundingBoxAscent)
+    this.dinosaurArtwork = artwork
+    return artwork
+  }
+
+  private drawDinosaur(legSwing: number): void {
     const { ctx } = this
-    const bodyColor = damageActive ? '#f07854' : '#63bd4c'
-    const shadowColor = damageActive ? '#a83e32' : '#347d38'
-    const legOffset = runningFrame === 0 ? 0 : 7
-
-    ctx.fillStyle = shadowColor
-    ctx.beginPath()
-    ctx.moveTo(32, 57)
-    ctx.lineTo(7, 45)
-    ctx.lineTo(28, 69)
-    ctx.closePath()
-    ctx.fill()
-
-    ctx.fillStyle = bodyColor
-    ctx.beginPath()
-    ctx.roundRect(22, 43, 52, 35, 15)
-    ctx.fill()
-    ctx.beginPath()
-    ctx.moveTo(42, 48)
-    ctx.lineTo(46, 37)
-    ctx.lineTo(54, 43)
-    ctx.lineTo(61, 31)
-    ctx.lineTo(68, 41)
-    ctx.lineTo(76, 39)
-    ctx.lineTo(72, 53)
-    ctx.closePath()
-    ctx.fill()
-    ctx.beginPath()
-    ctx.roundRect(52, 15, 35, 31, 10)
-    ctx.fill()
-    ctx.fillRect(72, 31, 22, 11)
-
-    ctx.fillStyle = '#d8ed9a'
-    ctx.beginPath()
-    ctx.ellipse(51, 61, 18, 10, 0, 0, Math.PI * 2)
-    ctx.fill()
-
-    ctx.fillStyle = shadowColor
-    ctx.fillRect(39 + legOffset, 70, 10, 23)
-    ctx.fillRect(59 - legOffset, 70, 10, 23)
-    ctx.fillRect(34 + legOffset, 88, 18, 7)
-    ctx.fillRect(55 - legOffset, 88, 18, 7)
-    ctx.fillRect(57, 50, 15, 5)
-
-    ctx.fillStyle = '#ffffff'
-    ctx.beginPath()
-    ctx.arc(76, 25, 5, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.fillStyle = '#172a1c'
-    ctx.beginPath()
-    ctx.arc(78, 25, 2.5, 0, Math.PI * 2)
-    ctx.fill()
+    const artwork = this.getDinosaurArtwork()
+    const { SIZE, HIP_HEIGHT } = DINOSAUR_ARTWORK
+    const hipY = SIZE * HIP_HEIGHT
+    const legHeight = SIZE - hipY
+    const halfWidth = SIZE / 2
+    ctx.drawImage(artwork, 0, 0, SIZE, hipY, 0, 0, SIZE, hipY)
+    for (let leg = 0; leg < 2; leg++) {
+      const x = leg * halfWidth
+      ctx.save()
+      ctx.translate(x, hipY)
+      // Shear from the hip so the original emoji legs stay attached to the body.
+      ctx.transform(1, 0, leg === 0 ? legSwing : -legSwing, 1, 0, 0)
+      ctx.drawImage(artwork, x, hipY, halfWidth, legHeight, 0, 0, halfWidth, legHeight)
+      ctx.restore()
+    }
   }
 }

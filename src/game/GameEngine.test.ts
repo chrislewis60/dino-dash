@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GameEngine } from '@/game/GameEngine'
 import { LEVELS } from '@/game/levels'
-import { SpawnSystem, CANVAS_WIDTH, PLATFORM_Y } from '@/game/systems'
-import type { GameStats, LavaVentEntity, MeteorEntity } from '@/types'
+import { SpawnSystem, PhysicsSystem, CANVAS_WIDTH, PLATFORM_Y } from '@/game/systems'
+import { PLAYER_HEALTH } from '@/config/gameplay'
+import type { CollectibleEntity, GameStats, LavaVentEntity, MeteorEntity, PlayerEntity, PowerUpEntity, PterodactylEntity } from '@/types'
 
 vi.mock('@/canvas/CanvasRenderer', () => ({
   CanvasRenderer: class {
@@ -16,6 +17,10 @@ interface EngineTestControls {
   updateHazards: (deltaMs: number) => void
   meteors: MeteorEntity[]
   vents: LavaVentEntity[]
+  pterodactyls: PterodactylEntity[]
+  collectibles: CollectibleEntity[]
+  powerups: PowerUpEntity[]
+  _player: PlayerEntity
 }
 
 describe('GameEngine progress', () => {
@@ -34,7 +39,80 @@ describe('GameEngine progress', () => {
 
   afterEach(() => {
     engine.destroy()
+    vi.restoreAllMocks()
     vi.unstubAllGlobals()
+  })
+
+  function isolateCollisions() {
+    vi.spyOn(SpawnSystem.prototype, 'tick').mockImplementation(() => {})
+    vi.spyOn(PhysicsSystem.prototype, 'updatePlayer').mockImplementation(() => {})
+    vi.spyOn(controls, 'updateHazards').mockImplementation(() => {})
+  }
+
+  it('records actual category points with multipliers, preserving totals across levels and resets', () => {
+    isolateCollisions()
+    const player = controls._player
+    controls.collectibles.push({
+      id: 'fossil', type: 'fossil', x: player.x, y: player.y,
+      width: 20, height: 20, active: true, collected: false, magnetPull: false,
+    })
+    controls.update(16)
+    const level1Stats = snapshots[snapshots.length - 1]
+    expect(level1Stats.scoreBreakdown.fossils).toBe(50)
+    expect(level1Stats.scoreBreakdown.distance).toBeGreaterThan(0)
+    controls.update(LEVELS[0].lengthMs)
+    engine.proceedToNextLevel()
+    const nextPlayer = controls._player
+    controls.collectibles.push({
+      id: 'fossil2', type: 'fossil', x: nextPlayer.x, y: nextPlayer.y,
+      width: 20, height: 20, active: true, collected: false, magnetPull: false,
+    })
+    controls.powerups.push({
+      id: 'roar', type: 'powerup', powerType: 'roar', x: nextPlayer.x, y: nextPlayer.y,
+      width: 28, height: 28, active: true, collected: false,
+    })
+    controls.meteors.push({
+      id: 'meteor', type: 'meteor', x: 800, y: 100, width: 32, height: 32,
+      active: true, velocityX: 0, velocityY: 0, warningX: 800,
+    })
+    controls.update(16)
+    const result = snapshots[snapshots.length - 1]
+    expect(result.scoreBreakdown.fossils).toBe(125)
+    expect(result.scoreBreakdown.roar).toBe(225)
+    expect(result.score).toBe(Object.values(result.scoreBreakdown).reduce((sum, value) => sum + value, 0))
+    expect(level1Stats.scoreBreakdown.fossils).toBe(50)
+    engine.togglePause()
+    engine.returnToMenu()
+    engine.startGame(2)
+    expect(snapshots[snapshots.length - 1].scoreBreakdown).toEqual({
+      distance: 0, fossils: 0, stomps: 0, roar: 0,
+    })
+  })
+
+  it('awards a diving stomp before checking damage and does not award it twice', () => {
+    isolateCollisions()
+    const player = controls._player
+    player.y = 200 - player.height - 20
+    player.velocityY = 600
+    const enemy: PterodactylEntity = {
+      id: 'enemy', type: 'pterodactyl', active: true,
+      x: player.x, y: 200, width: 50, height: 30,
+      velocityX: 0, velocityY: 0, phase: 'diving',
+      patrolStartX: player.x, patrolEndX: player.x + 100,
+    }
+    controls.pterodactyls.push(enemy)
+    vi.spyOn(PhysicsSystem.prototype, 'updatePlayer').mockImplementation((entity) => {
+      entity.y += 45
+    })
+    controls.update(16)
+    const result = snapshots[snapshots.length - 1]
+    expect(result.lives).toBe(PLAYER_HEALTH.MAX_LIVES)
+    expect(result.enemiesStomped).toBe(1)
+    expect(result.scoreBreakdown.stomps).toBe(200)
+    expect(enemy.active).toBe(false)
+    expect(player.velocityY).toBeLessThan(0)
+    controls.update(16)
+    expect(snapshots[snapshots.length - 1].scoreBreakdown.stomps).toBe(200)
   })
 
   it('preserves progress and lives when pausing and resuming', () => {
@@ -45,9 +123,19 @@ describe('GameEngine progress', () => {
     expect(cancelAnimationFrame).toHaveBeenCalled()
     engine.togglePause()
     expect(snapshots[snapshots.length - 1].levelElapsedMs).toBe(100)
-    expect(snapshots[snapshots.length - 1].lives).toBe(3)
+    expect(snapshots[snapshots.length - 1].lives).toBe(PLAYER_HEALTH.MAX_LIVES)
     controls.update(100)
     expect(snapshots[snapshots.length - 1].levelElapsedMs).toBe(200)
+  })
+
+  it('starts and restarts at 100% health', () => {
+    controls.update(16)
+    expect(snapshots[snapshots.length - 1].lives).toBe(PLAYER_HEALTH.MAX_LIVES)
+    engine.togglePause()
+    engine.returnToMenu()
+    engine.startGame()
+    controls.update(16)
+    expect(snapshots[snapshots.length - 1].lives).toBe(PLAYER_HEALTH.MAX_LIVES)
   })
 
   it('moves meteors through the visible sky and erupts vents onscreen', () => {
@@ -66,6 +154,45 @@ describe('GameEngine progress', () => {
     }
     expect(meteorVisible).toBe(true)
     expect(eruptionVisible).toBe(true)
+  })
+
+  it('starts level 2 with fresh stats and continues to level 3', () => {
+    controls.update(100)
+    engine.togglePause()
+    engine.returnToMenu()
+    engine.startGame(2)
+    expect(engine.stateMachine.state).toBe('playing')
+    expect(snapshots[snapshots.length - 1]).toEqual({
+      scoreBreakdown: { distance: 0, fossils: 0, stomps: 0, roar: 0 },
+      score: 0,
+      lives: PLAYER_HEALTH.MAX_LIVES,
+      level: 2,
+      distance: 0,
+      fossils: 0,
+      enemiesStomped: 0,
+      levelElapsedMs: 0,
+      activeLevel: LEVELS[1],
+    })
+    controls.update(100)
+    expect(snapshots[snapshots.length - 1].distance).toBe(3)
+    controls.update(LEVELS[1].lengthMs)
+    expect(engine.stateMachine.state).toBe('levelComplete')
+    engine.proceedToNextLevel()
+    expect(snapshots[snapshots.length - 1].level).toBe(3)
+    expect(snapshots[snapshots.length - 1].activeLevel).toBe(LEVELS[2])
+
+    engine.togglePause()
+    engine.returnToMenu()
+    engine.startGame()
+    expect(snapshots[snapshots.length - 1].level).toBe(1)
+    expect(snapshots[snapshots.length - 1].activeLevel).toBe(LEVELS[0])
+  })
+
+  it.each([0, 4, 1.5, NaN])('rejects unknown starting level %s without changing state', (level) => {
+    engine.togglePause()
+    engine.returnToMenu()
+    expect(() => engine.startGame(level)).toThrow(RangeError)
+    expect(engine.stateMachine.state).toBe('menu')
   })
 
   it('publishes keyboard pause immediately without advancing pending frames', () => {

@@ -16,6 +16,7 @@ describe('MainMenu', () => {
       gameState: 'menu',
       startGame,
       stats: {
+        scoreBreakdown: { distance: 0, fossils: 0, stomps: 0, roar: 0 },
         score: 0,
         lives: 3,
         level: 1,
@@ -65,5 +66,10 @@ describe('MainMenu', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Start Game' }))
     expect(startGame).toHaveBeenCalledOnce()
+    expect(startGame).toHaveBeenLastCalledWith()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Level 2' }))
+    expect(startGame).toHaveBeenCalledTimes(2)
+    expect(startGame).toHaveBeenLastCalledWith(2)
   })
 })

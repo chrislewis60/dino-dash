@@ -27,6 +27,7 @@ Vite will print the local development URL in the terminal.
 | Jump | Space or Up arrow | Tap |
 | Double jump | Space or Up arrow again while airborne | Tap again while airborne |
 | Slide | Down arrow | Swipe down |
+| Move / face left or right | Left / Right arrow | — |
 | Pause | Escape | Pause control in the game UI |
 
 The dinosaur runs automatically from left to right. Use the double jump to
@@ -34,14 +35,30 @@ clear wider hazards and slide beneath pterodactyls flying at head height.
 
 ## Gameplay
 
-- Start with 3 lives, with a maximum of 5.
+Choose **Start Game** to begin at Jurassic Jungle, or **Level 2** beside it to
+start a fresh game directly in Volcanic Badlands.
+Volcanic Badlands uses the supplied panoramic volcanic background, with the same
+cover scaling and slow horizontal pan as Jurassic Jungle.
+
+- Start at 100% health (5 lives), with a maximum of 5.
 - Collect eggs to restore one life, up to the maximum.
 - Collect fossils for 50 points each.
-- Stomp enemies for 200 points.
+- Stomp pterodactyls by jumping above them and landing on their backs while falling.
+  Successful stomps bounce you upwards and award 200 points before the level multiplier.
+  Landing detection follows movement between frames; side and underside hits are not stomps.
 - Use power-ups such as shields, sprint boosts, magnets, and roars.
 - Each level increases speed over time and applies its own score multiplier.
-- Platforms vary in width and height, with reachable steps and fossils along elevated routes.
-- Jurassic Jungle lasts 3 minutes, Volcanic Badlands 4 minutes, and Meteor Impact Zone 5 minutes.
+- Results show distance points, fossil points, stomp bonuses and roar bonuses,
+  accumulated across levels using the multiplier in effect when each reward was earned.
+  The displayed categories add up to the final score; eggs restore health, not points.
+- Platforms vary in width and height: climbs are capped at 80px, whilst drops can reach
+  240px with wider landing surfaces for safe descents. Fossils reward elevated routes.
+- Long spike beds always have a continuous platform overhead. After each of these
+  bridges, a long platform-free gap forces a return to the floor before a low platform
+  starts the next climbing section.
+- Jurassic Jungle lasts 90 seconds, Volcanic Badlands 120 seconds, and Meteor Impact Zone 150 seconds.
+- The player uses the welcome screen's dinosaur emoji, with animated running legs and
+  left/right facing controlled by the arrow keys (retained when released).
 
 The current level themes and detailed mechanics are documented in
 [GAME_DESIGN.md](GAME_DESIGN.md).

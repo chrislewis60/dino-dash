@@ -94,6 +94,7 @@ Elevated rectangular surfaces that scroll with the world. The player can jump on
   with 180px of safe platform at either end. Even at maximum speed, the spike bed
   exceeds the distance covered by a double jump
 - Long spike artwork repeats across the bed rather than stretching a single icon
+- Spike beds remain until their trailing edge and artwork have scrolled off-screen
 - Each bridge is followed by a 2200px platform-free gap, forcing a return to the
   floor. The next section restarts at the reachable 80px elevation
 - Descending platforms have a minimum landing width based on fall time and the level's

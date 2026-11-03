@@ -445,7 +445,7 @@ export class GameEngine {
     this.collectibles = this.collectibles.filter(e => e.active && !e.collected && e.x > offscreen)
     this.powerups     = this.powerups.filter(e => e.active && !e.collected && e.x > offscreen)
     this.platforms    = this.platforms.filter(e => e.active && !hasPassedLeftEdge(e.x, e.width))
-    this.spikePits    = this.spikePits.filter(e => e.active && e.x > offscreen)
+    this.spikePits    = this.spikePits.filter(e => e.active && e.x + e.width > offscreen)
   }
 
   private resetLevel(): void {

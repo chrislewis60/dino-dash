@@ -3,7 +3,7 @@ import { GameEngine } from '@/game/GameEngine'
 import { LEVELS } from '@/game/levels'
 import { SpawnSystem, PhysicsSystem, CANVAS_WIDTH, PLATFORM_Y } from '@/game/systems'
 import { PLAYER_HEALTH } from '@/config/gameplay'
-import type { CollectibleEntity, GameStats, LavaVentEntity, MeteorEntity, PlayerEntity, PowerUpEntity, PterodactylEntity } from '@/types'
+import type { CollectibleEntity, GameStats, LavaVentEntity, MeteorEntity, PlayerEntity, PowerUpEntity, PterodactylEntity, SpikePitEntity } from '@/types'
 
 vi.mock('@/canvas/CanvasRenderer', () => ({
   CanvasRenderer: class {
@@ -15,6 +15,8 @@ interface EngineTestControls {
   update: (deltaMs: number) => void
   loop: (timestamp: number) => void
   updateHazards: (deltaMs: number) => void
+  prune: () => void
+  spikePits: SpikePitEntity[]
   meteors: MeteorEntity[]
   vents: LavaVentEntity[]
   pterodactyls: PterodactylEntity[]
@@ -48,6 +50,38 @@ describe('GameEngine progress', () => {
     vi.spyOn(PhysicsSystem.prototype, 'updatePlayer').mockImplementation(() => {})
     vi.spyOn(controls, 'updateHazards').mockImplementation(() => {})
   }
+
+  it('keeps scrolling a wide spike bed until its trailing artwork has left the screen', () => {
+    const spikes: SpikePitEntity = {
+      id: 'wide-spikes', type: 'spikePit', active: true,
+      x: -81, y: PLATFORM_Y - 20, width: 1800, height: 20,
+    }
+    controls.spikePits.push(spikes)
+    controls.prune()
+    expect(controls.spikePits).toContain(spikes)
+
+    controls.updateHazards(1000)
+    controls.prune()
+    expect(spikes.x).toBe(-81 - LEVELS[0].baseSpeedPx)
+    expect(controls.spikePits).toContain(spikes)
+
+    spikes.x = -spikes.width - 1
+    controls.prune()
+    expect(controls.spikePits).toContain(spikes)
+
+    spikes.x = -spikes.width - 80
+    controls.prune()
+    expect(controls.spikePits).not.toContain(spikes)
+  })
+
+  it('removes inactive spike beds even when they are still visible', () => {
+    controls.spikePits.push({
+      id: 'inactive-spikes', type: 'spikePit', active: false,
+      x: 100, y: PLATFORM_Y - 20, width: 1800, height: 20,
+    })
+    controls.prune()
+    expect(controls.spikePits).toEqual([])
+  })
 
   it('records actual category points with multipliers, preserving totals across levels and resets', () => {
     isolateCollisions()

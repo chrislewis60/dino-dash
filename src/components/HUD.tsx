@@ -1,6 +1,7 @@
 import { useGame } from '@/context/GameContext'
 import { PLAYER_HEALTH } from '@/config/gameplay'
 import { clamp } from '@/utils'
+import { COLLECTABLE_ICONS } from '@/config/assets'
 
 export function HUD() {
   const { stats, gameState, togglePause } = useGame()
@@ -24,10 +25,20 @@ export function HUD() {
         <span className="hud-level">{stats.activeLevel?.name ?? `Level ${stats.level}`}</span>
       </div>
       <div className="hud-right">
-        <span className="hud-lives">
-          {'🥚'.repeat(stats.lives)}
+        <span className="hud-lives" aria-label={`Lives: ${stats.lives}`}>
+          {Array.from({ length: stats.lives }, (_, index) => (
+            <img
+              key={index}
+              className="collectable-icon"
+              src={COLLECTABLE_ICONS.egg.source}
+              alt=""
+            />
+          ))}
         </span>
-        <span className="hud-fossils">💎 {stats.fossils}</span>
+        <span className="hud-fossils" aria-label={`Fossils: ${stats.fossils}`}>
+          <img className="collectable-icon" src={COLLECTABLE_ICONS.fossil.source} alt="" />
+          {' '}{stats.fossils}
+        </span>
         <button className="hud-pause-btn" onClick={togglePause} aria-label="Pause">
           ⏸
         </button>

@@ -242,72 +242,28 @@
   height: 32px;
 }
 
-.game-key-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: 1px solid white;
-  border-radius: 6px;
-  font-size: 16px;
-  line-height: 1;
+.collectable-icon {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  vertical-align: middle;
+  object-fit: contain;
 }
 
-.game-key-icon-fossil {
-  width: 16px;
-  height: 16px;
-  border: none;
-  border-radius: 0;
-  transform: rotate(45deg);
-  box-shadow: 0 0 8px #ffcc66;
+.game-key-collectable {
+  width: 28px;
+  height: 28px;
 }
 
-.game-key-icon-egg {
-  width: 18px;
-  border: none;
-  border-radius: 50%;
-  box-shadow: 0 0 8px #ffffaa;
+.icon-credits {
+  margin: 16px 0 0;
+  font-size: 11px;
+  color: #b9c9ad;
 }
 
-.game-key-icon-meteor {
-  border: none;
-  border-radius: 50%;
-  background-image: radial-gradient(circle at 35% 35%, #ff9900 0 25%, transparent 27%);
-  box-shadow: 0 0 8px #ff6600;
-}
-
-.game-key-icon-lavaVent {
-  position: relative;
-  height: 8px;
-  margin-top: 16px;
-  border: none;
-  border-radius: 0;
-  box-shadow: 0 0 8px #ff4400;
-}
-
-.game-key-icon-lavaVent::before {
-  content: '';
-  position: absolute;
-  bottom: 8px;
-  width: 8px;
-  height: 20px;
-  background: #ff6600;
-}
-
-.game-key-icon-pterodactyl {
-  width: 36px;
-  border: none;
-  border-radius: 0;
-  clip-path: polygon(0 0, 45% 35%, 55% 35%, 100% 0, 75% 65%, 60% 60%, 50% 85%, 40% 60%, 25% 65%);
-}
-
-.game-key-icon-spikePit {
-  width: 30px;
-  height: 20px;
-  border: none;
-  border-radius: 0;
-  clip-path: polygon(0 100%, 16.7% 0, 33.3% 100%, 50% 0, 66.7% 100%, 83.3% 0, 100% 100%);
+.icon-credits a {
+  color: inherit;
+  text-decoration: underline;
 }
 
 .game-key-label {

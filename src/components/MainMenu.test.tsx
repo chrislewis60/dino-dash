@@ -40,6 +40,24 @@ describe('MainMenu', () => {
     expect(within(controls).getByText(/Jump \/ double-jump/)).toBeInTheDocument()
     expect(within(collect).getAllByRole('listitem')).toHaveLength(GAME_KEY.COLLECT.length)
     expect(within(avoid).getAllByRole('listitem')).toHaveLength(GAME_KEY.AVOID.length)
+    const icons = collect.querySelectorAll('img')
+    expect(icons).toHaveLength(GAME_KEY.COLLECT.length)
+    GAME_KEY.COLLECT.forEach((item, index) => {
+      expect(icons[index]).toHaveAttribute('src', item.source)
+      expect(icons[index]).toHaveAttribute('alt', '')
+    })
+    const hazardIcons = avoid.querySelectorAll('img')
+    expect(hazardIcons).toHaveLength(GAME_KEY.AVOID.length)
+    GAME_KEY.AVOID.forEach((item, index) => {
+      expect(hazardIcons[index]).toHaveAttribute('src', item.source)
+      expect(hazardIcons[index]).toHaveAttribute('alt', '')
+    })
+    expect(screen.getByRole('link', { name: 'Lorc & Delapouite / Game-icons.net' })).toHaveAttribute(
+      'href', 'https://game-icons.net/'
+    )
+    expect(screen.getByRole('link', { name: 'CC BY 3.0' })).toHaveAttribute(
+      'href', 'https://creativecommons.org/licenses/by/3.0/'
+    )
     for (const item of [...GAME_KEY.COLLECT, ...GAME_KEY.AVOID]) {
       expect(within(key).getByText(item.label)).toBeInTheDocument()
       expect(within(key).getByText(item.detail)).toBeInTheDocument()

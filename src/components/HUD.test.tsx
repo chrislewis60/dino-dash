@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { HUD } from '@/components/HUD'
 import { useGame } from '@/context/GameContext'
 import { LEVELS } from '@/game/levels'
+import { COLLECTABLE_ICONS } from '@/config/assets'
 
 vi.mock('@/context/GameContext', () => ({ useGame: vi.fn() }))
 
@@ -24,6 +25,10 @@ describe('HUD', () => {
       startGame: vi.fn(), togglePause, proceedToNextLevel: vi.fn(), returnToMenu: vi.fn(),
     })
     render(<HUD />)
+    expect(screen.getByLabelText(`Lives: ${lives}`).querySelectorAll('img')).toHaveLength(lives)
+    expect(screen.getByLabelText('Fossils: 0').querySelector('img')).toHaveAttribute(
+      'src', COLLECTABLE_ICONS.fossil.source
+    )
     expect(screen.getByRole('progressbar', { name: `Health ${health}%` })).toHaveAttribute('value', String(health))
     expect(screen.getByRole('progressbar', { name: `Level Progress ${progress}%` })).toHaveAttribute('value', String(progress))
     fireEvent.click(screen.getByRole('button', { name: 'Pause' }))

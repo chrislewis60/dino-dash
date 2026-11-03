@@ -1,4 +1,5 @@
 import { useGame } from '@/context/GameContext'
+import { COLLECTABLE_ICONS } from '@/config/assets'
 
 export function LevelComplete() {
   const { gameState, stats, proceedToNextLevel, returnToMenu } = useGame()
@@ -17,7 +18,10 @@ export function LevelComplete() {
           </div>
           <div className="score-row">
             <span>Fossils</span>
-            <span>💎 {stats.fossils}</span>
+            <span>
+              <img className="collectable-icon" src={COLLECTABLE_ICONS.fossil.source} alt="" />
+              {' '}{stats.fossils}
+            </span>
           </div>
           <div className="score-row">
             <span>Enemies Stomped</span>

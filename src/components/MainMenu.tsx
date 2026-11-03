@@ -32,6 +32,11 @@ export function MainMenu() {
             </div>
           </div>
         </section>
+        <p className="icon-credits">
+          Icons by <a href="https://game-icons.net/">Lorc &amp; Delapouite / Game-icons.net</a>
+          {' '}under <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>
+          {' '}(recoloured).
+        </p>
       </div>
     </div>
   )
@@ -44,7 +49,7 @@ interface GameKeyGroupProps {
     label: string
     detail: string
     colour: string
-    symbol: string
+    source: string
   }>
 }
 
@@ -56,12 +61,7 @@ function GameKeyGroup({ title, items }: GameKeyGroupProps) {
         {items.map((item) => (
           <li key={item.id}>
             <span className="game-key-swatch" aria-hidden="true">
-              <span
-                className={`game-key-icon game-key-icon-${item.id}`}
-                style={{ backgroundColor: item.colour }}
-              >
-                {item.symbol}
-              </span>
+              <img className="collectable-icon game-key-collectable" src={item.source} alt="" />
             </span>
             <span className="game-key-label">
               <strong>{item.label}</strong>

@@ -46,6 +46,35 @@ clear wider hazards and slide beneath pterodactyls flying at head height.
 The current level themes and detailed mechanics are documented in
 [GAME_DESIGN.md](GAME_DESIGN.md).
 
+## Item Artwork
+
+Fossils, eggs, all four power-ups and all four hazards use locally bundled SVGs from
+[Game-icons.net](https://game-icons.net/), shared by the canvas pickups, menu key
+and relevant HUD/result counters. Artwork is recoloured, with transparent
+backgrounds and no decorative pickup boxes or borders; hitboxes, rewards and
+hazard movement are unchanged. Meteor landing
+shadows and lava warning/eruption cues are retained.
+In-level artwork is rendered at 150% of its original size for readability,
+extending beyond the unchanged collision bounds. Flying items remain centred,
+while vents and spikes remain anchored at their bases. Menu and HUD icon sizes
+are unchanged.
+
+Icons made by **Lorc**, licensed under
+[Creative Commons Attribution 3.0](https://creativecommons.org/licenses/by/3.0/):
+[ammonite](https://game-icons.net/1x1/lorc/ammonite.html),
+[dinosaur egg](https://game-icons.net/1x1/lorc/dinosaur-egg.html),
+[edged shield](https://game-icons.net/1x1/lorc/edged-shield.html),
+[power lightning](https://game-icons.net/1x1/lorc/power-lightning.html),
+[magnet](https://game-icons.net/1x1/lorc/magnet.html) and
+[dinosaur rex](https://game-icons.net/1x1/lorc/dinosaur-rex.html).
+Hazard icons: **Lorc**'s
+[burning meteor](https://game-icons.net/1x1/lorc/burning-meteor.html) and
+[spiked fence](https://game-icons.net/1x1/lorc/spiked-fence.html), and **Delapouite**'s
+[smoking volcano](https://game-icons.net/1x1/delapouite/smoking-volcano.html) and
+[pterodactylus](https://game-icons.net/1x1/delapouite/pterodactylus.html), also CC BY 3.0.
+Assets live in `public/icons/`; their paths and colours are defined in
+`src/config/assets.ts`. Artist and licence credits are also shown in the main menu.
+
 ## Development Commands
 
 ```bash

@@ -10,9 +10,10 @@ import type {
   LevelConfig,
   GameStats,
   BackgroundLayerConfig,
+  Rect,
 } from '@/types'
 import { PLATFORM_Y, CANVAS_WIDTH, CANVAS_HEIGHT } from '@/game/systems/index'
-import { GAME_COLOURS } from '@/config/gameKey'
+import { COLLECTABLE_ICONS, GAME_ICONS, GAME_ICON_LAYOUT } from '@/config/assets'
 
 export interface RenderPayload {
   player: PlayerEntity
@@ -30,27 +31,26 @@ export interface RenderPayload {
 }
 
 const GROUND_HEIGHT = CANVAS_HEIGHT - PLATFORM_Y
-const POWERUP_COLORS: Record<string, string> = {
-  shield: '#00ccff',
-  sprint: '#ffcc00',
-  magnet: '#cc66ff',
-  roar:   '#ff6600',
-}
-const POWERUP_LABELS: Record<string, string> = {
-  shield: '🛡',
-  sprint: '⚡',
-  magnet: '🧲',
-  roar:   '🦖',
-}
 
 export class CanvasRenderer {
   private ctx: CanvasRenderingContext2D
   private readonly backgroundImages = new Map<string, HTMLImageElement>()
+  private readonly iconImages = new Map<string, HTMLImageElement>()
+  private readonly failedIconImages = new Set<string>()
 
   constructor(_canvas: HTMLCanvasElement) {
     const ctx = _canvas.getContext('2d')
     if (!ctx) throw new Error('Canvas 2D context unavailable')
     this.ctx = ctx
+    for (const icon of Object.values(GAME_ICONS)) {
+      const image = new Image()
+      image.onerror = () => {
+        this.failedIconImages.add(icon.source)
+        console.error(`Unable to load game icon: ${icon.source}`)
+      }
+      image.src = icon.source
+      this.iconImages.set(icon.source, image)
+    }
   }
 
   render(payload: RenderPayload): void {
@@ -183,18 +183,11 @@ export class CanvasRenderer {
     const { ctx } = this
     for (const s of spikePits) {
       if (!s.active) continue
-      const spikeCount = Math.max(2, Math.floor(s.width / 16))
-      const spikeWidth = s.width / spikeCount
-      ctx.fillStyle = GAME_COLOURS.SPIKES
-      for (let i = 0; i < spikeCount; i++) {
-        const sx = s.x + i * spikeWidth
-        ctx.beginPath()
-        ctx.moveTo(sx, s.y + s.height)          // bottom-left
-        ctx.lineTo(sx + spikeWidth / 2, s.y)     // tip
-        ctx.lineTo(sx + spikeWidth, s.y + s.height) // bottom-right
-        ctx.closePath()
-        ctx.fill()
-      }
+      ctx.save()
+      ctx.shadowColor = '#16251f'
+      ctx.shadowBlur = 3
+      this.drawGameIcon(s, s.type)
+      ctx.restore()
     }
   }
 
@@ -224,16 +217,7 @@ export class CanvasRenderer {
       // Glow
       ctx.shadowColor = '#ff6600'
       ctx.shadowBlur = 15
-      ctx.fillStyle = '#cc3300'
-      ctx.beginPath()
-      ctx.arc(m.x + m.width / 2, m.y + m.height / 2, m.width / 2, 0, Math.PI * 2)
-      ctx.fill()
-      // Core
-      ctx.shadowBlur = 0
-      ctx.fillStyle = '#ff9900'
-      ctx.beginPath()
-      ctx.arc(m.x + m.width / 2 - 4, m.y + m.height / 2 - 4, m.width / 4, 0, Math.PI * 2)
-      ctx.fill()
+      this.drawGameIcon(m, m.type)
       ctx.restore()
     }
   }
@@ -247,8 +231,9 @@ export class CanvasRenderer {
       ctx.save()
       ctx.shadowColor = '#ff4400'
       ctx.shadowBlur = glowIntensity
-      ctx.fillStyle = v.phase === 'cooling' ? '#554433' : '#cc3300'
-      ctx.fillRect(v.x, v.y, v.width, v.height)
+      ctx.globalAlpha = v.phase === 'cooling' ? 0.6 : 1
+      this.drawGameIcon(v, v.type)
+      ctx.globalAlpha = 1
       // Lava column
       if (v.column) {
         const gradient = ctx.createLinearGradient(0, v.column.y, 0, v.column.y + v.column.height)
@@ -266,25 +251,9 @@ export class CanvasRenderer {
     for (const p of pterodactyls) {
       if (!p.active) continue
       ctx.save()
-      ctx.fillStyle = p.phase === 'diving' ? '#884400' : '#664422'
-      // Body
-      ctx.beginPath()
-      ctx.ellipse(p.x + p.width / 2, p.y + p.height / 2, p.width / 2, p.height / 2, 0, 0, Math.PI * 2)
-      ctx.fill()
-      // Wings
-      ctx.fillStyle = '#553311'
-      ctx.beginPath()
-      ctx.moveTo(p.x + p.width / 2, p.y + p.height / 2)
-      ctx.lineTo(p.x - 20, p.y)
-      ctx.lineTo(p.x + p.width / 2, p.y + p.height / 3)
-      ctx.closePath()
-      ctx.fill()
-      ctx.beginPath()
-      ctx.moveTo(p.x + p.width / 2, p.y + p.height / 2)
-      ctx.lineTo(p.x + p.width + 20, p.y)
-      ctx.lineTo(p.x + p.width / 2, p.y + p.height / 3)
-      ctx.closePath()
-      ctx.fill()
+      ctx.shadowColor = p.phase === 'diving' ? '#ff6600' : '#16251f'
+      ctx.shadowBlur = p.phase === 'diving' ? 12 : 3
+      this.drawGameIcon(p, p.type)
       ctx.restore()
     }
   }
@@ -292,56 +261,66 @@ export class CanvasRenderer {
   // ─── Collectibles & Power-ups ──────────────────────────────────────────────
 
   private drawCollectibles(collectibles: CollectibleEntity[]): void {
-    const { ctx } = this
     for (const c of collectibles) {
       if (!c.active || c.collected) continue
-      ctx.save()
-      if (c.type === 'fossil') {
-        ctx.fillStyle = '#d4a843'
-        ctx.shadowColor = '#ffcc66'
-        ctx.shadowBlur = 8
-        // Diamond shape
-        ctx.beginPath()
-        ctx.moveTo(c.x + c.width / 2, c.y)
-        ctx.lineTo(c.x + c.width, c.y + c.height / 2)
-        ctx.lineTo(c.x + c.width / 2, c.y + c.height)
-        ctx.lineTo(c.x, c.y + c.height / 2)
-        ctx.closePath()
-        ctx.fill()
-      } else {
-        // Egg — oval
-        ctx.fillStyle = '#e8d44d'
-        ctx.shadowColor = '#ffffaa'
-        ctx.shadowBlur = 10
-        ctx.beginPath()
-        ctx.ellipse(c.x + c.width / 2, c.y + c.height / 2, c.width / 2, c.height / 2, 0, 0, Math.PI * 2)
-        ctx.fill()
-      }
-      ctx.restore()
+      this.drawCollectableIcon(c, c.type)
     }
   }
 
   private drawPowerUps(powerups: PowerUpEntity[]): void {
-    const { ctx } = this
     for (const p of powerups) {
       if (!p.active || p.collected) continue
-      ctx.save()
-      const color = POWERUP_COLORS[p.powerType] ?? '#ffffff'
-      ctx.fillStyle = color
-      ctx.shadowColor = color
-      ctx.shadowBlur = 16
-      ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.roundRect(p.x, p.y, p.width, p.height, 6)
-      ctx.fill()
-      ctx.stroke()
-      ctx.shadowBlur = 0
-      ctx.font = '16px serif'
+      this.drawCollectableIcon(p, p.powerType)
+    }
+  }
+
+  private drawCollectableIcon(
+    bounds: CollectibleEntity | PowerUpEntity,
+    type: keyof typeof COLLECTABLE_ICONS,
+  ): void {
+    const size = Math.min(bounds.width, bounds.height)
+    const x = bounds.x + (bounds.width - size) / 2
+    const y = bounds.y + (bounds.height - size) / 2
+
+    this.drawGameIcon({ x, y, width: size, height: size }, type)
+  }
+
+  private drawGameIcon(bounds: Rect, type: keyof typeof GAME_ICONS): void {
+    const { ctx } = this
+    const icon = GAME_ICONS[type]
+    const image = this.iconImages.get(icon.source)
+    const artworkBounds = this.getIconDrawBounds(bounds, type)
+    if (image?.complete && image.naturalWidth > 0) {
+      ctx.drawImage(
+        image, artworkBounds.x, artworkBounds.y, artworkBounds.width, artworkBounds.height,
+      )
+    } else {
+      ctx.fillStyle = icon.colour
+      ctx.font = `bold ${14 * GAME_ICON_LAYOUT.SCALE}px sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillText(POWERUP_LABELS[p.powerType] ?? '?', p.x + p.width / 2, p.y + p.height / 2)
-      ctx.restore()
+      ctx.fillText(
+        this.failedIconImages.has(icon.source) ? '!' : '\u2026',
+        artworkBounds.x + artworkBounds.width / 2,
+        artworkBounds.y + artworkBounds.height / 2,
+      )
+    }
+
+  }
+
+  private getIconDrawBounds(bounds: Rect, type: keyof typeof GAME_ICONS): Rect {
+    const width = bounds.width * GAME_ICON_LAYOUT.SCALE
+    const height = bounds.height * GAME_ICON_LAYOUT.SCALE
+    const groundAnchored = GAME_ICON_LAYOUT.GROUND_ANCHORED_TYPES.some(
+      (groundType) => groundType === type,
+    )
+    return {
+      x: bounds.x + (bounds.width - width) / 2,
+      y: groundAnchored
+        ? bounds.y + bounds.height - height
+        : bounds.y + (bounds.height - height) / 2,
+      width,
+      height,
     }
   }
 

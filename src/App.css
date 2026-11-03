@@ -163,7 +163,26 @@
   color: #4a8c3f;
 }
 
+.menu-overlay {
+  overflow: hidden;
+}
+
+.menu-background {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(6px);
+  opacity: 0.4;
+  transform: scale(1.03);
+  pointer-events: none;
+  z-index: 0;
+}
+
 .main-menu-panel {
+  position: relative;
+  z-index: 1;
   max-width: 900px;
   padding: 12px 20px;
 }

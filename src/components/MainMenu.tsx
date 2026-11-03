@@ -1,6 +1,6 @@
 import { useGame } from '@/context/GameContext'
 import { GAME_KEY } from '@/config/gameKey'
-import { DINOSAUR_ARTWORK } from '@/config/assets'
+import { BACKGROUND_IMAGES, DINOSAUR_ARTWORK } from '@/config/assets'
 
 export function MainMenu() {
   const { gameState, startGame } = useGame()
@@ -17,6 +17,12 @@ export function MainMenu() {
 
   return (
     <div className="overlay menu-overlay">
+      <img
+        className="menu-background"
+        src={BACKGROUND_IMAGES.JURASSIC_JUNGLE}
+        alt=""
+        aria-hidden="true"
+      />
       <div className="menu-panel main-menu-panel">
         <h1 className="menu-title">
           {DINOSAUR_ARTWORK.GLYPH} Dino Dash

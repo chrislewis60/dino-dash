@@ -4,6 +4,23 @@
 
 This is a React + TypeScript + Vite application — a dinosaur-themed platform game called **Dino Dash: Extinction Run**.
 
+## Spec-driven delivery
+
+For end-to-end feature delivery, use the repository-local
+[Playbook](agents/playbook.agent.md) via `/deliver`; use `/evolves` with
+[Onboarding](agents/onboarding.agent.md) to refresh this existing project's context.
+See the [workflow guide](../docs/guides/spec-driven-development.md),
+[actual project profile](../docs/project-profile.md) and
+[spec/ADR index](../docs/README.md).
+
+The initial specs are retrospective observations of the current dirty baseline,
+not historical approvals or a request to rebuild the game. Keep new proposals
+separate, preserve unrelated work, and surface design/code disagreements explicitly.
+Specs describe what; ADRs record why. Significant design changes need a proposed ADR.
+Record actual checks and human decisions; no agent may approve gates or release.
+The profile records tools actually configured here; generic examples below are
+not evidence that a framework, service or command exists.
+
 ## Agentic Workflow — Consult Specialist Agents
 
 When making decisions about **architecture, structure, or best practice**, consult the specialist agents defined in `.github/agents/`:

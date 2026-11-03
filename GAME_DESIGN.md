@@ -1,7 +1,12 @@
 # Dino Dash: Extinction Run — Game Design Document
 
 This document gives AI agents and contributors shared context about the game's intended design.
-It is the single source of truth for mechanics, progression, and content decisions.
+It is the narrative design reference for mechanics, progression, and content decisions.
+The [retrospective specifications and ADRs](docs/README.md) separately document the
+observed implementation and inferred rationale as of 2026-11-03, pending human review.
+Where this design and the code disagree, see the
+[open questions](docs/registers/open-questions.md); neither observation nor a generated
+proposal implies product approval. Future changes should update the relevant spec.
 
 ---
 

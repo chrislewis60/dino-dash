@@ -37,6 +37,7 @@ clear wider hazards and slide beneath pterodactyls flying at head height.
 
 Choose **Start Game** to begin at Jurassic Jungle, or **Level 2** beside it to
 start a fresh game directly in Volcanic Badlands.
+The welcome screen shows a faded, blurred Jurassic Jungle background behind the menu.
 Volcanic Badlands uses the supplied panoramic volcanic background, with the same
 cover scaling and slow horizontal pan as Jurassic Jungle.
 
@@ -117,6 +118,22 @@ systems:
 
 Game content is organised in `src/game/levels/`, shared domain types live in
 `src/types/`, and reusable canvas UI components are in `src/canvas/components/`.
+
+## Spec-driven AI Development
+
+The repository includes a local Copilot Playbook with onboarding, specifications,
+Architecture Decision Records (ADRs), acceptance evidence and explicit human gates.
+Start with the [documentation index](docs/README.md) and
+[how the workflow works](docs/guides/spec-driven-development.md).
+
+Use `/evolves` to refresh project readiness and `/deliver` for a new change.
+The initial specs/ADRs were reconstructed on 2026-11-03 from the current working
+game, including uncommitted changes. They are labelled observed/inferred and await
+human review; they do not claim to be the original design history.
+Known design/code disagreements are recorded as
+[open questions](docs/registers/open-questions.md), not silently fixed.
+
+Validate the documentation contracts with `npm test -- tests/deliveryWorkflow.test.ts`.
 
 ## Project Status
 

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { MainMenu } from '@/components/MainMenu'
 import { GAME_KEY } from '@/config/gameKey'
+import { BACKGROUND_IMAGES } from '@/config/assets'
 import { useGame } from '@/context/GameContext'
 
 vi.mock('@/context/GameContext', () => ({
@@ -32,6 +33,11 @@ describe('MainMenu', () => {
       returnToMenu: vi.fn(),
     })
     render(<MainMenu />)
+
+    const background = document.querySelector('.menu-background')
+    expect(background).toHaveAttribute('src', BACKGROUND_IMAGES.JURASSIC_JUNGLE)
+    expect(background).toHaveAttribute('alt', '')
+    expect(background).toHaveAttribute('aria-hidden', 'true')
 
     const key = screen.getByRole('region', { name: 'Game Details' })
     const collect = within(key).getByRole('list', { name: 'Collect' })

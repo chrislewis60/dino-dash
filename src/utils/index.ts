@@ -42,3 +42,7 @@ export function aabbOverlap(
 export function msToSec(ms: number): number {
   return ms / 1000
 }
+
+export function hasPassedLeftEdge(x: number, width: number): boolean {
+  return x + width <= 0
+}

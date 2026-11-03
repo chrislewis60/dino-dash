@@ -1,7 +1,22 @@
 import { describe, it, expect } from 'vitest'
-import { clamp, lerp, randomBetween, randomInt, aabbOverlap, generateId, msToSec } from '@/utils'
+import { clamp, lerp, randomBetween, randomInt, aabbOverlap, generateId, msToSec, hasPassedLeftEdge } from '@/utils'
 
 describe('utils', () => {
+  describe('hasPassedLeftEdge', () => {
+    it('keeps a wide platform whose left edge is offscreen', () => {
+      expect(hasPassedLeftEdge(-81, 320)).toBe(false)
+    })
+
+    it('keeps a platform until its final pixel leaves the screen', () => {
+      expect(hasPassedLeftEdge(-319, 320)).toBe(false)
+    })
+
+    it('removes a platform once its right edge reaches the left boundary', () => {
+      expect(hasPassedLeftEdge(-320, 320)).toBe(true)
+      expect(hasPassedLeftEdge(-321, 320)).toBe(true)
+    })
+  })
+
   describe('clamp', () => {
     it('returns value when within range', () => {
       expect(clamp(5, 0, 10)).toBe(5)

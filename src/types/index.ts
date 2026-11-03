@@ -158,6 +158,7 @@ export interface GameStats {
   distance: number
   fossils: number
   enemiesStomped: number
+  levelElapsedMs: number
   activeLevel: LevelConfig | null
 }
 

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
 import type { GameStats, GameState } from '@/types'
 import { GameEngine } from '@/game/GameEngine'
+import { PLAYER_HEALTH } from '@/config/gameplay'
 
 interface GameContextValue {
   stats: GameStats
@@ -16,11 +17,12 @@ const GameContext = createContext<GameContextValue | null>(null)
 
 const INITIAL_STATS: GameStats = {
   score: 0,
-  lives: 3,
+  lives: PLAYER_HEALTH.INITIAL_LIVES,
   level: 1,
   distance: 0,
   fossils: 0,
   enemiesStomped: 0,
+  levelElapsedMs: 0,
   activeLevel: null,
 }
 

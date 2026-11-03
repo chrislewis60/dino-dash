@@ -1,5 +1,6 @@
 import type { LevelConfig } from '@/types'
 import { BACKGROUND_IMAGES } from '@/config/assets'
+import { PLATFORM_LAYOUT } from '@/config/platforms'
 
 export const level1: LevelConfig = {
   id: 1,
@@ -46,17 +47,18 @@ export const level1: LevelConfig = {
   ],
   spawnRules: [
     { entityType: 'meteor',       intervalMs: 4000, intervalVariance: 1500, quantity: 1 },
+    { entityType: 'lavaVent',     intervalMs: 6500, intervalVariance: 1500, quantity: 1 },
     { entityType: 'pterodactyl',  intervalMs: 6000, intervalVariance: 2000, quantity: 1 },
     { entityType: 'fossil',       intervalMs: 2500, intervalVariance: 800,  quantity: 2 },
     { entityType: 'egg',          intervalMs: 12000, intervalVariance: 3000, quantity: 1 },
     { entityType: 'powerup',      intervalMs: 18000, intervalVariance: 5000, quantity: 1 },
-    { entityType: 'platform',     intervalMs: 5000,  intervalVariance: 2000, quantity: 1 },
+    { entityType: PLATFORM_LAYOUT.ENTITY_TYPE, intervalMs: 700, intervalVariance: 0, quantity: 1 },
     { entityType: 'spikePit',     intervalMs: 7000,  intervalVariance: 2500, quantity: 1 },
   ],
   baseSpeedPx: 260,
   maxSpeedPx: 480,
   speedRampPerSecond: 8,
-  lengthMs: 60_000,
+  lengthMs: 180_000,
   scoreMultiplier: 1,
 }
 
@@ -96,13 +98,13 @@ export const level2: LevelConfig = {
     { entityType: 'fossil',       intervalMs: 2000, intervalVariance: 600,  quantity: 2 },
     { entityType: 'egg',          intervalMs: 10000, intervalVariance: 2500, quantity: 1 },
     { entityType: 'powerup',      intervalMs: 15000, intervalVariance: 4000, quantity: 1 },
-    { entityType: 'platform',     intervalMs: 4000,  intervalVariance: 1500, quantity: 1 },
+    { entityType: PLATFORM_LAYOUT.ENTITY_TYPE, intervalMs: 700, intervalVariance: 0, quantity: 1 },
     { entityType: 'spikePit',     intervalMs: 5500,  intervalVariance: 2000, quantity: 1 },
   ],
   baseSpeedPx: 320,
   maxSpeedPx: 560,
   speedRampPerSecond: 10,
-  lengthMs: 75_000,
+  lengthMs: 240_000,
   scoreMultiplier: 1.5,
 }
 
@@ -144,13 +146,13 @@ export const level3: LevelConfig = {
     { entityType: 'fossil',       intervalMs: 1500, intervalVariance: 500,  quantity: 2 },
     { entityType: 'egg',          intervalMs: 8000, intervalVariance: 2000, quantity: 1 },
     { entityType: 'powerup',      intervalMs: 12000, intervalVariance: 3000, quantity: 1 },
-    { entityType: 'platform',     intervalMs: 3000,  intervalVariance: 1000, quantity: 1 },
+    { entityType: PLATFORM_LAYOUT.ENTITY_TYPE, intervalMs: 700, intervalVariance: 0, quantity: 1 },
     { entityType: 'spikePit',     intervalMs: 4000,  intervalVariance: 1500, quantity: 1 },
   ],
   baseSpeedPx: 400,
   maxSpeedPx: 700,
   speedRampPerSecond: 14,
-  lengthMs: 90_000,
+  lengthMs: 300_000,
   scoreMultiplier: 2,
 }
 

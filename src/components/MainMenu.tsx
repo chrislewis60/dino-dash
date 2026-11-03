@@ -1,4 +1,5 @@
 import { useGame } from '@/context/GameContext'
+import { GAME_KEY } from '@/config/gameKey'
 
 export function MainMenu() {
   const { gameState, startGame } = useGame()
@@ -7,28 +8,68 @@ export function MainMenu() {
 
   return (
     <div className="overlay menu-overlay">
-      <div className="menu-panel">
+      <div className="menu-panel main-menu-panel">
         <h1 className="menu-title">
           🦖 Dino Dash
         </h1>
         <p className="menu-subtitle">Extinction Run</p>
-        <p className="menu-description">
-          Run, jump, and dash your way through prehistoric peril!
-          Dodge meteors, lava eruptions, and pterodactyls as extinction
-          closes in.
-        </p>
         <button className="btn btn-primary" onClick={startGame}>
           Start Game
         </button>
-        <div className="controls-info">
-          <h3>Controls</h3>
-          <ul>
-            <li><kbd>Space</kbd> / <kbd>↑</kbd> — Jump (press twice for double-jump)</li>
-            <li><kbd>↓</kbd> — Slide</li>
-            <li><kbd>Esc</kbd> / <kbd>P</kbd> — Pause</li>
-          </ul>
-        </div>
+        <section className="game-key" aria-labelledby="game-key-heading">
+          <h2 id="game-key-heading">Game Details</h2>
+          <div className="game-key-groups">
+            <GameKeyGroup title="Collect" items={GAME_KEY.COLLECT} />
+            <GameKeyGroup title="Avoid" items={GAME_KEY.AVOID} />
+            <div className="controls-info">
+              <h3>Controls</h3>
+              <ul aria-label="Controls">
+                <li><kbd>Space</kbd> / <kbd>↑</kbd><br />Jump / double-jump</li>
+                <li><kbd>←</kbd> / <kbd>→</kbd><br />Move left / right</li>
+                <li><kbd>↓</kbd><br />Slide</li>
+                <li><kbd>Esc</kbd> / <kbd>P</kbd><br />Pause</li>
+              </ul>
+            </div>
+          </div>
+        </section>
       </div>
+    </div>
+  )
+}
+
+interface GameKeyGroupProps {
+  readonly title: string
+  readonly items: ReadonlyArray<{
+    id: string
+    label: string
+    detail: string
+    colour: string
+    symbol: string
+  }>
+}
+
+function GameKeyGroup({ title, items }: GameKeyGroupProps) {
+  return (
+    <div className="game-key-group">
+      <h3>{title}</h3>
+      <ul aria-label={title}>
+        {items.map((item) => (
+          <li key={item.id}>
+            <span className="game-key-swatch" aria-hidden="true">
+              <span
+                className={`game-key-icon game-key-icon-${item.id}`}
+                style={{ backgroundColor: item.colour }}
+              >
+                {item.symbol}
+              </span>
+            </span>
+            <span className="game-key-label">
+              <strong>{item.label}</strong>
+              <span>{item.detail}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

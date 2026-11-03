@@ -1,0 +1,10 @@
+export const PLATFORM_LAYOUT = {
+  ENTITY_TYPE: 'platform',
+  MIN_ELEVATION: 80,
+  MAX_ELEVATION: 320,
+  MAX_HEIGHT_CHANGE: 80,
+  MIN_WIDTH: 160,
+  MAX_WIDTH: 440,
+  HEIGHT: 18,
+  GAP: 50,
+} as const

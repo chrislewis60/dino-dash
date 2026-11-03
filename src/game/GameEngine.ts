@@ -19,12 +19,12 @@ import {
 import { InputSystem } from './systems/InputSystem'
 import { CanvasRenderer } from '@/canvas/CanvasRenderer'
 import { LEVELS } from './levels/index'
-import { clamp } from '@/utils'
+import { clamp, hasPassedLeftEdge } from '@/utils'
+import { PLAYER_HEALTH } from '@/config/gameplay'
 
 const FIXED_TIMESTEP_MS = 1000 / 60  // 60 fps fixed timestep
 const MAX_FRAME_MS = 200             // cap to prevent spiral-of-death
-const MAX_LIVES = 5
-const INITIAL_LIVES = 3
+const { MAX_LIVES, INITIAL_LIVES } = PLAYER_HEALTH
 const INVINCIBILITY_MS = 1500        // brief invincibility after taking damage
 const DISTANCE_SCORE_FACTOR = 0.05   // score per pixel scrolled
 const FOSSIL_SCORE = 50
@@ -83,6 +83,7 @@ export class GameEngine {
       distance: 0,
       fossils: 0,
       enemiesStomped: 0,
+      levelElapsedMs: 0,
       activeLevel: firstLevel,
     }
     this.onStatsChange = onStatsChange
@@ -95,9 +96,6 @@ export class GameEngine {
 
   private setupStateMachine(): void {
     this.stateMachine
-      .on('playing', {
-        onEnter: () => this.resetLevel(),
-      })
       .on('gameOver', {
         onEnter: () => this.stopLoop(),
       })
@@ -117,15 +115,24 @@ export class GameEngine {
       distance: 0,
       fossils: 0,
       enemiesStomped: 0,
+      levelElapsedMs: 0,
       activeLevel: LEVELS[0],
     }
+    this.resetLevel()
     this.stateMachine.transition('playing')
     this.startLoop()
   }
 
   togglePause(): void {
-    if (this.stateMachine.is('playing')) this.stateMachine.transition('paused')
-    else if (this.stateMachine.is('paused')) this.stateMachine.transition('playing')
+    if (this.stateMachine.is('playing')) {
+      this.stateMachine.transition('paused')
+      this.stopLoop()
+    }
+    else if (this.stateMachine.is('paused')) {
+      this.stateMachine.transition('playing')
+      this.startLoop()
+    }
+    this.onStatsChange({ ...this.stats })
   }
 
   proceedToNextLevel(): void {
@@ -137,7 +144,9 @@ export class GameEngine {
     }
     this.stats.level = this.levelIndex + 1
     this.stats.activeLevel = LEVELS[this.levelIndex]
+    this.resetLevel()
     this.stateMachine.transition('playing')
+    this.onStatsChange({ ...this.stats })
     this.startLoop()
   }
 
@@ -153,6 +162,7 @@ export class GameEngine {
   // ─── Game Loop ─────────────────────────────────────────────────────────────
 
   private startLoop(): void {
+    this.stopLoop()
     this.lastTimestamp = 0
     this.accumulator = 0
     this.rafId = requestAnimationFrame(this.loop)
@@ -177,6 +187,7 @@ export class GameEngine {
     while (this.accumulator >= FIXED_TIMESTEP_MS) {
       this.update(FIXED_TIMESTEP_MS)
       this.accumulator -= FIXED_TIMESTEP_MS
+      if (!this.stateMachine.is('playing')) return
     }
 
     this.renderer.render({
@@ -220,6 +231,7 @@ export class GameEngine {
 
     // Level timer & length check
     this.levelTimer += deltaMs
+    this.stats.levelElapsedMs = Math.min(this.levelTimer, levelConfig.lengthMs)
     if (this.levelTimer >= levelConfig.lengthMs) {
       this.stateMachine.transition('levelComplete')
       this.stopLoop()
@@ -415,7 +427,7 @@ export class GameEngine {
     this.pterodactyls = this.pterodactyls.filter(e => e.active)
     this.collectibles = this.collectibles.filter(e => e.active && !e.collected && e.x > offscreen)
     this.powerups     = this.powerups.filter(e => e.active && !e.collected && e.x > offscreen)
-    this.platforms    = this.platforms.filter(e => e.active && e.x > offscreen)
+    this.platforms    = this.platforms.filter(e => e.active && !hasPassedLeftEdge(e.x, e.width))
     this.spikePits    = this.spikePits.filter(e => e.active && e.x > offscreen)
   }
 
@@ -429,6 +441,7 @@ export class GameEngine {
     this.platforms = []
     this.spikePits = []
     this.levelTimer = 0
+    this.stats.levelElapsedMs = 0
     this.invincibilityTimer = 0
     const config = LEVELS[this.levelIndex]
     this.worldSpeed = config.baseSpeedPx

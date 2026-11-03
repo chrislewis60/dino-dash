@@ -75,8 +75,9 @@ Each level has a `scoreMultiplier` applied to all points earned in that level.
 Elevated rectangular surfaces that scroll with the world. The player can jump onto them from below (one-way: land on top only). Landing on a platform resets the player's double jump.
 
 - Spawned by `SpawnSystem` like other entities — scroll left and despawn off-screen
-- Two height tiers: **low** (~110px above ground — one jump) and **mid** (~190px — two jumps)
-- Width varies from 100–220px per spawn
+- Heights vary randomly from 80–320px above ground, with changes capped at 80px between neighbours
+- Width varies from 160–440px per spawn, with 50px gaps between platforms
+- Fossils appear above platforms to reward elevated routes
 - Defined via `spawnRules` in `LevelConfig` using `entityType: 'platform'`
 - `crumbling` field exists on `PlatformEntity` but is not yet active
 

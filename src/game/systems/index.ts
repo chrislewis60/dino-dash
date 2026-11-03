@@ -11,16 +11,19 @@ import type {
   InputState,
 } from '@/types'
 import { generateId, randomBetween, randomInt } from '@/utils'
+import { PLATFORM_LAYOUT } from '@/config/platforms'
 
-const PLATFORM_Y = 435        // ground-level y position
-const CANVAS_WIDTH = 800
-const CANVAS_HEIGHT = 500
+const CANVAS_WIDTH = 1196
+const CANVAS_HEIGHT = 650
+const PLATFORM_Y = CANVAS_HEIGHT - 90
 
 // Spawn distances from right edge
 const SPAWN_X = CANVAS_WIDTH + 60
 
 export class SpawnSystem {
   private timers = new Map<string, number>()
+  private platformElevation: number | null = null
+  private platformDistanceRemaining: number | null = null
 
   constructor(
     private levelConfig: LevelConfig,
@@ -31,6 +34,8 @@ export class SpawnSystem {
 
   private resetTimers(): void {
     this.timers.clear()
+    this.platformElevation = null
+    this.platformDistanceRemaining = null
     for (const rule of this.levelConfig.spawnRules) {
       this.timers.set(rule.entityType, rule.intervalMs)
     }
@@ -39,6 +44,11 @@ export class SpawnSystem {
   updateLevel(config: LevelConfig): void {
     this.levelConfig = config
     this.resetTimers()
+  }
+
+  private nextPlatformDistance(deltaMs: number): number | null {
+    if (this.platformDistanceRemaining === null) return null
+    return this.platformDistanceRemaining - this.worldSpeed() * deltaMs / 1000
   }
 
   tick(
@@ -53,7 +63,10 @@ export class SpawnSystem {
   ): void {
     for (const rule of this.levelConfig.spawnRules) {
       const prev = this.timers.get(rule.entityType) ?? rule.intervalMs
-      const next = prev - deltaMs
+      const distanceRemaining = rule.entityType === PLATFORM_LAYOUT.ENTITY_TYPE
+        ? this.nextPlatformDistance(deltaMs)
+        : null
+      const next = distanceRemaining ?? prev - deltaMs
       if (next <= 0) {
         // Reset with variance
         const variance = randomBetween(-rule.intervalVariance, rule.intervalVariance)
@@ -67,28 +80,32 @@ export class SpawnSystem {
             case 'fossil':      collectibles.push(this.createFossil()); break
             case 'egg':         collectibles.push(this.createEgg()); break
             case 'powerup':     powerups.push(this.createPowerUp()); break
-            case 'platform':    platforms.push(this.createPlatform()); break
+            case PLATFORM_LAYOUT.ENTITY_TYPE: {
+              const platform = this.createPlatform()
+              platforms.push(platform)
+              collectibles.push(this.createPlatformFossil(platform))
+              this.platformDistanceRemaining = platform.width + PLATFORM_LAYOUT.GAP
+              break
+            }
             case 'spikePit':    spikePits.push(this.createSpikePit()); break
           }
         }
-      } else {
+      } else if (distanceRemaining === null) {
         this.timers.set(rule.entityType, next)
+      } else {
+        this.platformDistanceRemaining = next
       }
     }
   }
 
   private createPlatform(): PlatformEntity {
-    const width = randomBetween(100, 220)
-    const height = 18
-    // Platforms appear at varied heights: low (near ground), mid, or high
-    const heightOptions = [
-      PLATFORM_Y - 110,  // low — one jump up
-      PLATFORM_Y - 190,  // mid — two jumps up
-    ]
-    const y = heightOptions[randomInt(0, heightOptions.length - 1)]
+    const width = randomBetween(PLATFORM_LAYOUT.MIN_WIDTH, PLATFORM_LAYOUT.MAX_WIDTH)
+    const height = PLATFORM_LAYOUT.HEIGHT
+    this.platformElevation = this.nextPlatformElevation()
+    const y = PLATFORM_Y - this.platformElevation
     return {
       id: generateId(),
-      type: 'platform',
+      type: PLATFORM_LAYOUT.ENTITY_TYPE,
       x: SPAWN_X,
       y,
       width,
@@ -97,6 +114,14 @@ export class SpawnSystem {
       crumbling: false,
       crumbleTimer: 0,
     }
+  }
+
+  private nextPlatformElevation(): number {
+    if (this.platformElevation === null) return PLATFORM_LAYOUT.MIN_ELEVATION
+    return randomBetween(
+      Math.max(PLATFORM_LAYOUT.MIN_ELEVATION, this.platformElevation - PLATFORM_LAYOUT.MAX_HEIGHT_CHANGE),
+      Math.min(PLATFORM_LAYOUT.MAX_ELEVATION, this.platformElevation + PLATFORM_LAYOUT.MAX_HEIGHT_CHANGE),
+    )
   }
 
   private createSpikePit(): SpikePitEntity {
@@ -113,9 +138,9 @@ export class SpawnSystem {
   }
 
   private createMeteor(): MeteorEntity {
-    const x = SPAWN_X + randomBetween(0, 200)
+    const x = CANVAS_WIDTH - randomBetween(60, 300)
     const y = -60
-    const angle = randomBetween(200, 250) * (Math.PI / 180) // steep downward angle
+    const angle = randomBetween(110, 140) * (Math.PI / 180)
     const speed = randomBetween(300, 500)
     return {
       id: generateId(),
@@ -171,6 +196,13 @@ export class SpawnSystem {
       collected: false,
       magnetPull: false,
     }
+  }
+
+  private createPlatformFossil(platform: PlatformEntity): CollectibleEntity {
+    const fossil = this.createFossil()
+    fossil.x = platform.x + (platform.width - fossil.width) / 2
+    fossil.y = platform.y - fossil.height - 12
+    return fossil
   }
 
   private createEgg(): CollectibleEntity {

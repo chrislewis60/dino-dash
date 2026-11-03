@@ -12,6 +12,7 @@ import type {
   BackgroundLayerConfig,
 } from '@/types'
 import { PLATFORM_Y, CANVAS_WIDTH, CANVAS_HEIGHT } from '@/game/systems/index'
+import { GAME_COLOURS } from '@/config/gameKey'
 
 export interface RenderPayload {
   player: PlayerEntity
@@ -28,7 +29,7 @@ export interface RenderPayload {
   damageActive: boolean
 }
 
-const GROUND_HEIGHT = 80
+const GROUND_HEIGHT = CANVAS_HEIGHT - PLATFORM_Y
 const POWERUP_COLORS: Record<string, string> = {
   shield: '#00ccff',
   sprint: '#ffcc00',
@@ -184,7 +185,7 @@ export class CanvasRenderer {
       if (!s.active) continue
       const spikeCount = Math.max(2, Math.floor(s.width / 16))
       const spikeWidth = s.width / spikeCount
-      ctx.fillStyle = '#555566'
+      ctx.fillStyle = GAME_COLOURS.SPIKES
       for (let i = 0; i < spikeCount; i++) {
         const sx = s.x + i * spikeWidth
         ctx.beginPath()

@@ -40,6 +40,8 @@ clear wider hazards and slide beneath pterodactyls flying at head height.
 - Stomp enemies for 200 points.
 - Use power-ups such as shields, sprint boosts, magnets, and roars.
 - Each level increases speed over time and applies its own score multiplier.
+- Platforms vary in width and height, with reachable steps and fossils along elevated routes.
+- Jurassic Jungle lasts 3 minutes, Volcanic Badlands 4 minutes, and Meteor Impact Zone 5 minutes.
 
 The current level themes and detailed mechanics are documented in
 [GAME_DESIGN.md](GAME_DESIGN.md).
